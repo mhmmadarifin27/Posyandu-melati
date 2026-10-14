@@ -1,0 +1,122 @@
+@import url('https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,500;0,600;0,700;0,800;1,500;1,600&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap');
+@import "tailwindcss";
+
+@theme {
+  --color-maroon: #80000f;
+  --color-maroon-50: #fff5f6;
+  --color-maroon-100: #fce1e4;
+  --color-maroon-200: #f8c8c8;
+  --color-maroon-300: #f39aa4;
+  --color-maroon-400: #dc5666;
+  --color-maroon-500: #b81c2f;
+  --color-maroon-600: #990012;
+  --color-maroon-700: #80000f;
+  --color-maroon-800: #66000c;
+  --color-maroon-900: #4d0009;
+}
+
+.font-serif {
+  font-family: 'Playfair Display', Georgia, Cambria, 'Times New Roman', serif;
+}
+
+:root {
+  --background: #ffffff;
+  --foreground: #0f172a;
+  --muted: #fff5f6;
+  --muted-foreground: #64748b;
+  --border: #fce1e4;
+  --card: #ffffff;
+  --card-foreground: #0f172a;
+  --ring: #80000f;
+  --radius: 0.75rem;
+
+  --primary: #80000f; /* Maroon 80000f */
+  --primary-hover: #66000c; /* Darker Maroon */
+  --primary-light: #fff5f6; /* Soft Maroon */
+  --accent: #80000f; /* Maroon 80000f */
+  --accent-light: #fff5f6;
+  --bg-main: #f8fafc; /* Slate 50 */
+  --card-bg: #ffffff;
+  --border-color: #fce1e4; /* Maroon Soft Border */
+  --text-main: #0f172a; /* Slate 900 */
+  --text-muted: #64748b; /* Slate 500 */
+  --danger: #80000f;
+  --warning: #d97706; /* Amber 600 */
+  --success: #80000f;
+}
+
+body {
+  background-color: var(--bg-main);
+  color: var(--text-main);
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  min-height: 100vh;
+  margin: 0;
+  padding: 0;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* Glassmorphism Classes */
+.glass-panel {
+  background: rgba(255, 255, 255, 0.88);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(226, 232, 240, 0.8);
+  box-shadow: 0 4px 20px -2px rgba(0, 0, 0, 0.04), 0 2px 6px -1px rgba(0, 0, 0, 0.02);
+}
+
+.glass-panel-hover {
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.glass-panel-hover:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 10px 25px -3px rgba(0, 0, 0, 0.08), 0 4px 10px -2px rgba(0, 0, 0, 0.04);
+  border-color: rgba(244, 63, 94, 0.4);
+}
+
+/* Custom Scrollbar */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: #f1f5f9;
+}
+::-webkit-scrollbar-thumb {
+  background: #cbd5e1;
+  border-radius: 9999px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #94a3b8;
+}
+
+/* Shimmer & Pulse Animation for Urgent Indicators */
+@keyframes soft-pulse {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50% { opacity: 0.85; transform: scale(1.03); }
+}
+
+.pulse-urgent {
+  animation: soft-pulse 2s infinite ease-in-out;
+}
+
+/* Print Stylesheet for Posyandu Official Reports */
+@media print {
+  body {
+    background: #ffffff !important;
+    color: #000000 !important;
+  }
+  .no-print {
+    display: none !important;
+  }
+  .print-only {
+    display: block !important;
+  }
+  .page-break {
+    page-break-before: always;
+  }
+  .shadow-sm, .shadow, .shadow-md, .shadow-lg, .glass-panel {
+    box-shadow: none !important;
+    border: 1px solid #e2e8f0 !important;
+  }
+}
