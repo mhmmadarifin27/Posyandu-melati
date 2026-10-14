@@ -186,9 +186,9 @@ export default function LandingPage() {
             }`}
           >
             <Link
-              href="/dashboard"
+              href="/login"
               className="flex items-center gap-3.5 group cursor-pointer"
-              title="Posyandu Melati RW 03"
+              title="Masuk ke Sistem Posyandu"
             >
               <img
                 src="/images/logo-posyandu.png"

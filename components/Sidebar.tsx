@@ -54,7 +54,8 @@ export default function Sidebar({ className = '' }: SidebarProps) {
   const handleLogout = () => {
     if (typeof window !== 'undefined') {
       if (window.confirm('Apakah Anda yakin ingin keluar / logout dari sistem Posyandu Melati?')) {
-        window.location.href = '/';
+        localStorage.removeItem('posyandu_auth_user');
+        window.location.href = '/login';
       }
     }
   };
