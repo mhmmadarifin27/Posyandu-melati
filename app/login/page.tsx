@@ -222,7 +222,6 @@ export default function LoginPage() {
                   <Input
                     id="email"
                     type="email"
-                    placeholder="kader@posyandumelati.id"
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
                     required
@@ -256,7 +255,6 @@ export default function LoginPage() {
                   <Input
                     id="password"
                     type={showPassword ? 'text' : 'password'}
-                    placeholder="••••••••"
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
                     required
