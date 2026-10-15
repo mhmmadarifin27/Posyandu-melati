@@ -498,6 +498,8 @@ export default function LaporanPage() {
         pemeriksaanList={pemeriksaanList}
         bumilList={bumilList}
         lansiaList={lansiaList}
+        selectedMonth={selectedMonth}
+        selectedYear={selectedYear}
       />
     </div>
   );

@@ -285,22 +285,25 @@ export default function KelolaLandingPage({ initialTab = 'galeri' }: KelolaLandi
           {/* ========================================================================= */}
           {activeTab === 'galeri' && (
             <div className="space-y-8">
-              {/* Box Tambah Foto (HANYA UPLOAD DARI PERANGKAT HP / KOMPUTER) */}
-              <div className="bg-white rounded-3xl p-6 sm:p-7 border border-slate-200 shadow-xs space-y-6">
-                <div>
-                  <h3 className="font-serif text-lg font-bold text-slate-900 flex items-center gap-2">
-                    <Plus className="w-5 h-5 text-[#80000f]" />
-                    <span>Tambah Foto Galeri Baru</span>
+              {/* Box Tambah Foto (HANYA UPLOAD DARI PERANGKAT HP / KOMPUTER - TENGAH / CENTERED) */}
+              <div className="bg-white rounded-3xl p-6 sm:p-8 border border-slate-200 shadow-xs space-y-6">
+                <div className="text-center max-w-xl mx-auto space-y-1">
+                  <div className="inline-flex items-center justify-center gap-1.5 px-3.5 py-1 rounded-full bg-[#fff5f6] border border-[#fce1e4] text-[#80000f] text-xs font-bold mb-1">
+                    <Plus className="w-3.5 h-3.5" />
+                    <span>Dokumentasi Baru</span>
+                  </div>
+                  <h3 className="font-serif text-xl sm:text-2xl font-bold text-slate-900">
+                    Tambah Foto Galeri Baru
                   </h3>
-                  <p className="text-xs text-slate-500 mt-1">
+                  <p className="text-xs text-slate-500 max-w-md mx-auto">
                     Unggah foto kegiatan Posyandu langsung dari perangkat (komputer atau HP Anda). Foto akan langsung tampil di animasi silinder 3D galeri publik.
                   </p>
                 </div>
 
-                <div className="max-w-2xl space-y-4">
+                <div className="max-w-2xl mx-auto space-y-4">
                   <div
                     onClick={() => fileInputRef.current?.click()}
-                    className="border-2 border-dashed border-[#fce1e4] hover:border-[#80000f] bg-[#fff5f6] hover:bg-[#fff5f6]/80 rounded-2xl p-8 text-center cursor-pointer transition-colors flex flex-col items-center justify-center gap-3"
+                    className="border-2 border-dashed border-[#fce1e4] hover:border-[#80000f] bg-[#fff5f6] hover:bg-[#fff5f6]/80 rounded-3xl p-8 sm:p-10 text-center cursor-pointer transition-all flex flex-col items-center justify-center gap-3 shadow-2xs hover:shadow-sm"
                   >
                     <input
                       ref={fileInputRef}
@@ -309,23 +312,23 @@ export default function KelolaLandingPage({ initialTab = 'galeri' }: KelolaLandi
                       className="hidden"
                       onChange={handleFileUpload}
                     />
-                    <div className="w-12 h-12 rounded-2xl bg-[#fce1e4] text-[#80000f] flex items-center justify-center shadow-xs">
-                      <Upload className="w-6 h-6" />
+                    <div className="w-14 h-14 rounded-2xl bg-[#fce1e4] text-[#80000f] flex items-center justify-center shadow-xs transition-transform hover:scale-105">
+                      <Upload className="w-7 h-7" />
                     </div>
-                    <div>
+                    <div className="space-y-1">
                       <p className="text-sm font-bold text-slate-900">
                         Klik untuk memilih foto dari perangkat Anda
                       </p>
-                      <p className="text-xs text-slate-500 mt-0.5">
-                        Mendukung format gambar JPG, PNG, atau WebP (Foto otomatis dioptimalkan)
+                      <p className="text-xs text-slate-500">
+                        Mendukung format gambar JPG, PNG, atau WebP (Foto otomatis disesuaikan ke galeri)
                       </p>
                     </div>
                   </div>
 
                   {/* Pratinjau Foto yang telah dipilih dari perangkat */}
                   {photoPreview && (
-                    <div className="space-y-3 p-4 bg-slate-50 border border-slate-200 rounded-2xl">
-                      <div className="flex items-center justify-between text-xs font-bold text-slate-700">
+                    <div className="space-y-3 p-5 bg-slate-50 border border-slate-200 rounded-3xl text-center">
+                      <div className="flex items-center justify-between text-xs font-bold text-slate-700 px-1">
                         <span>Pratinjau Foto yang Dipilih:</span>
                         <button
                           type="button"
@@ -335,11 +338,11 @@ export default function KelolaLandingPage({ initialTab = 'galeri' }: KelolaLandi
                           }}
                           className="text-[#80000f] hover:underline cursor-pointer"
                         >
-                          Hapus / Ganti
+                          Hapus / Ganti Foto
                         </button>
                       </div>
 
-                      <div className="relative aspect-video rounded-xl overflow-hidden border border-slate-200 shadow-xs max-w-md mx-auto">
+                      <div className="relative aspect-video rounded-2xl overflow-hidden border border-slate-200 shadow-sm max-w-md mx-auto bg-slate-200">
                         <img
                           src={photoPreview}
                           alt="Pratinjau Foto"
@@ -349,7 +352,7 @@ export default function KelolaLandingPage({ initialTab = 'galeri' }: KelolaLandi
                     </div>
                   )}
 
-                  <div className="pt-2">
+                  <div className="pt-2 flex justify-center">
                     <button
                       type="button"
                       onClick={() => handleAddPhoto()}
