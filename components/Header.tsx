@@ -133,10 +133,16 @@ export default function Header({
         </div>
       </div>
 
-      {/* Interactive Real-Time Search Bar */}
-      <div ref={searchContainerRef} className="relative w-48 sm:w-72 md:w-96">
-        <div className="relative w-full">
-          <Search className="w-4 h-4 text-[#80000f] absolute left-3.5 top-3 pointer-events-none" />
+      {/* Cloud Supabase Status Indicator & Interactive Search Bar */}
+      <div className="flex items-center gap-3">
+        <div className="hidden xl:flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-emerald-50 border border-emerald-200 text-emerald-800 text-[11px] font-bold shadow-2xs">
+          <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+          <span>Cloud Supabase Aktif</span>
+        </div>
+
+        <div ref={searchContainerRef} className="relative w-48 sm:w-72 md:w-80">
+          <div className="relative w-full">
+            <Search className="w-4 h-4 text-[#80000f] absolute left-3.5 top-3 pointer-events-none" />
           <input
             ref={inputRef}
             type="text"
@@ -302,6 +308,7 @@ export default function Header({
             )}
           </div>
         )}
+      </div>
       </div>
     </header>
   );

@@ -56,6 +56,10 @@ export default function LansiaPage() {
   const loadData = () => {
     setLansiaList(PosyanduStore.getLansia());
     setPemeriksaanList(PosyanduStore.getPemeriksaanLansia());
+    PosyanduStore.syncFromSupabase().then(() => {
+      setLansiaList(PosyanduStore.getLansia());
+      setPemeriksaanList(PosyanduStore.getPemeriksaanLansia());
+    });
   };
 
   useEffect(() => {

@@ -70,6 +70,10 @@ export default function BalitaPage() {
   const loadData = () => {
     setBalitaList(PosyanduStore.getBalita());
     setPemeriksaanList(PosyanduStore.getPemeriksaan());
+    PosyanduStore.syncFromSupabase().then(() => {
+      setBalitaList(PosyanduStore.getBalita());
+      setPemeriksaanList(PosyanduStore.getPemeriksaan());
+    });
   };
 
   useEffect(() => {

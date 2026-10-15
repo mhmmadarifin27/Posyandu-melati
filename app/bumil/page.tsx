@@ -74,6 +74,10 @@ export default function IbuPage() {
   const loadData = () => {
     setBumilList(PosyanduStore.getBumil());
     setBusuiList(PosyanduStore.getBusui());
+    PosyanduStore.syncFromSupabase().then(() => {
+      setBumilList(PosyanduStore.getBumil());
+      setBusuiList(PosyanduStore.getBusui());
+    });
   };
 
   useEffect(() => {
