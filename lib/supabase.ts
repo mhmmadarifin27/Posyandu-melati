@@ -58,6 +58,16 @@ export class PosyanduStore {
     this.saveBalita(list);
   }
 
+  static updateBalita(updated: Balita): void {
+    const list = this.getBalita().map((b) => (b.id === updated.id ? updated : b));
+    this.saveBalita(list);
+  }
+
+  static deleteBalita(id: string): void {
+    const list = this.getBalita().filter((b) => b.id !== id);
+    this.saveBalita(list);
+  }
+
   // --- PEMERIKSAAN BALITA ---
   static getPemeriksaan(): PemeriksaanBalita[] {
     if (typeof window === 'undefined') return INITIAL_PEMERIKSAAN;
@@ -116,6 +126,16 @@ export class PosyanduStore {
     this.saveBumil(list);
   }
 
+  static updateBumil(updated: IbuHamil): void {
+    const list = this.getBumil().map((b) => (b.id === updated.id ? updated : b));
+    this.saveBumil(list);
+  }
+
+  static deleteBumil(id: string): void {
+    const list = this.getBumil().filter((b) => b.id !== id);
+    this.saveBumil(list);
+  }
+
   // --- IBU MENYUSUI (BUSUI) ---
   static getBusui(): IbuMenyusui[] {
     if (typeof window === 'undefined') return INITIAL_BUSUI;
@@ -142,6 +162,16 @@ export class PosyanduStore {
     this.saveBusui(list);
   }
 
+  static updateBusui(updated: IbuMenyusui): void {
+    const list = this.getBusui().map((b) => (b.id === updated.id ? updated : b));
+    this.saveBusui(list);
+  }
+
+  static deleteBusui(id: string): void {
+    const list = this.getBusui().filter((b) => b.id !== id);
+    this.saveBusui(list);
+  }
+
   // --- LANSIA ---
   static getLansia(): Lansia[] {
     if (typeof window === 'undefined') return INITIAL_LANSIA;
@@ -165,6 +195,16 @@ export class PosyanduStore {
   static addLansia(item: Lansia): void {
     const list = this.getLansia();
     list.unshift(item);
+    this.saveLansia(list);
+  }
+
+  static updateLansia(updated: Lansia): void {
+    const list = this.getLansia().map((l) => (l.id === updated.id ? updated : l));
+    this.saveLansia(list);
+  }
+
+  static deleteLansia(id: string): void {
+    const list = this.getLansia().filter((l) => l.id !== id);
     this.saveLansia(list);
   }
 

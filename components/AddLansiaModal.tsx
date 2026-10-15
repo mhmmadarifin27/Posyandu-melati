@@ -130,7 +130,7 @@ export default function AddLansiaModal({
         {/* Form Body */}
         <form onSubmit={handleSubmit} className="p-6 overflow-y-auto space-y-4 text-xs">
           <div>
-            <label className="block font-semibold text-slate-700 mb-1">Pilih Lansia:</label>
+            <label className="block font-semibold text-slate-700 mb-1">Pilih Lansia Sasaran:</label>
             <select
               value={lansiaId}
               onChange={(e) => setLansiaId(e.target.value)}
@@ -138,10 +138,31 @@ export default function AddLansiaModal({
             >
               {lansiaList.map((l) => (
                 <option key={l.id} value={l.id}>
-                  {l.nama} ({l.usiaTahun} Thn &bull; {l.jenisKelamin === 'L' ? 'Laki-laki' : 'Perempuan'})
+                  {l.nama} (NIK: {l.nik} • {l.usiaTahun} Thn • {l.jenisKelamin === 'L' ? 'L' : 'P'})
                 </option>
               ))}
             </select>
+
+            {/* Quick Profile Card Lansia */}
+            {(() => {
+              const selectedLansia = lansiaList.find((l) => l.id === lansiaId);
+              if (!selectedLansia) return null;
+              return (
+                <div className="mt-2 p-3 bg-slate-50 border border-slate-200 rounded-2xl flex items-center justify-between text-xs">
+                  <div>
+                    <div className="font-bold text-slate-900 flex items-center gap-1.5">
+                      <span>{selectedLansia.nama}</span>
+                      <span className="px-2 py-0.5 rounded-full bg-slate-200 text-slate-700 text-[10px] font-mono">
+                        NIK: {selectedLansia.nik}
+                      </span>
+                    </div>
+                    <div className="text-slate-500 text-[11px] mt-0.5">
+                      Usia: {selectedLansia.usiaTahun} Tahun &bull; Pendamping: {selectedLansia.namaKeluarga} &bull; {selectedLansia.alamat}
+                    </div>
+                  </div>
+                </div>
+              );
+            })()}
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">

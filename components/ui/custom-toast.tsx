@@ -73,8 +73,26 @@ export const toast = {
       );
     }
   },
-  confirm(options: ConfirmDialogOptions) {
+  confirm(
+    titleOrOptions: string | ConfirmDialogOptions,
+    description?: string,
+    onConfirm?: () => void | Promise<void>,
+    type: 'danger' | 'warning' | 'info' = 'danger'
+  ) {
     if (typeof window !== 'undefined') {
+      let options: ConfirmDialogOptions;
+      if (typeof titleOrOptions === 'object') {
+        options = titleOrOptions;
+      } else {
+        options = {
+          title: titleOrOptions,
+          description: description || '',
+          onConfirm: onConfirm || (() => {}),
+          type,
+          confirmText: 'Ya, Lanjutkan',
+          cancelText: 'Batal',
+        };
+      }
       window.dispatchEvent(new CustomEvent(CONFIRM_EVENT, { detail: options }));
     }
   },

@@ -149,9 +149,9 @@ export default function AddWeighingModal({
 
         {/* Form Body */}
         <form onSubmit={handleSubmit} className="p-6 overflow-y-auto space-y-4 text-xs">
-          {/* Pilih Balita */}
-          <div>
-            <label className="block font-semibold text-slate-700 mb-1">Pilih Balita:</label>
+          {/* Pilih Balita dengan NIK & Riwayat Bulan Sebelumnya */}
+          <div className="space-y-2">
+            <label className="block font-semibold text-slate-700">Pilih Sasaran Balita (NIK / Nama):</label>
             <select
               value={balitaId}
               onChange={(e) => setBalitaId(e.target.value)}
@@ -159,10 +159,36 @@ export default function AddWeighingModal({
             >
               {balitaList.map((b) => (
                 <option key={b.id} value={b.id}>
-                  {b.nama} ({b.jenisKelamin === 'L' ? 'Laki-laki' : 'Perempuan'} &bull; Ibu: {b.namaIbu})
+                  {b.nama} (NIK: {b.nik} &bull; Ibu: {b.namaIbu})
                 </option>
               ))}
             </select>
+
+            {currentBalita && (
+              <div className="p-3 bg-slate-50 border border-slate-200 rounded-xl flex flex-col sm:flex-row sm:items-center justify-between gap-2 text-xs">
+                <div>
+                  <div className="font-bold text-slate-900 flex items-center gap-1.5">
+                    <span>{currentBalita.nama}</span>
+                    <span className="text-[10px] px-1.5 py-0.2 rounded bg-slate-200 font-mono">
+                      {currentBalita.jenisKelamin === 'L' ? 'Laki-laki' : 'Perempuan'}
+                    </span>
+                  </div>
+                  <div className="text-[11px] text-slate-500 font-mono mt-0.5">
+                    NIK: <strong>{currentBalita.nik}</strong> &bull; Ibu: Ny. {currentBalita.namaIbu} &bull; Lahir: {currentBalita.tanggalLahir}
+                  </div>
+                </div>
+                {lastPeriksa ? (
+                  <div className="sm:text-right shrink-0 bg-white px-2.5 py-1 rounded-lg border border-slate-200">
+                    <span className="text-[10px] text-slate-500 font-medium block">Timbang Terakhir ({lastPeriksa.tanggalPeriksa}):</span>
+                    <span className="font-bold text-slate-900">{lastPeriksa.beratBadan} kg &bull; Status: {lastPeriksa.statusKMS}</span>
+                  </div>
+                ) : (
+                  <div className="sm:text-right shrink-0">
+                    <span className="text-[10.5px] text-amber-700 font-medium">Belum ada riwayat timbang sebelumnya</span>
+                  </div>
+                )}
+              </div>
+            )}
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
