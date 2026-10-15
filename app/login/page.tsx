@@ -74,19 +74,65 @@ export default function LoginPage() {
     setErrorMessage(null);
     setSuccessMessage(null);
 
+    const cleanEmail = email.trim().toLowerCase();
+    const cleanPassword = password.trim();
+
+    if (!cleanEmail || !cleanPassword) {
+      setErrorMessage('Mohon masukkan email dan kata sandi dengan benar.');
+      setIsLoading(false);
+      return;
+    }
+
     try {
-      // 1. Coba autentikasi via Supabase jika sudah terkonfigurasi
+      // 1. Coba autentikasi via Supabase Auth jika terkonfigurasi
       if (isSupabaseConfigured && supabase) {
-        const { error } = await supabase.auth.signInWithPassword({
-          email: email.trim(),
-          password: password,
+        const { data, error } = await supabase.auth.signInWithPassword({
+          email: cleanEmail,
+          password: cleanPassword,
         });
 
         if (error) {
-          // Jika user belum mendaftar di auth.users Supabase, izinkan fallback login demo untuk operasional kader
-          console.warn('Supabase Auth response:', error.message);
-        } else {
-          setSuccessMessage('Login berhasil! Mengalihkan ke dashboard...');
+          console.warn('Supabase Auth error:', error.message);
+          setErrorMessage(`Gagal masuk Supabase: ${error.message}`);
+          setIsLoading(false);
+          return;
+        }
+
+        if (data?.user) {
+          // Ambil role dari user_metadata Supabase (jika di-set di Auth Supabase: role = 'kader' atau 'bidan')
+          const metaRole =
+            data.user.user_metadata?.role ||
+            data.user.app_metadata?.role;
+
+          const userRole =
+            metaRole === 'kader' || metaRole === 'bidan'
+              ? metaRole
+              : cleanEmail.includes('kader')
+              ? 'kader'
+              : 'bidan';
+
+          const userName =
+            data.user.user_metadata?.nama ||
+            data.user.user_metadata?.full_name ||
+            (userRole === 'kader' ? 'Kader Posyandu RW 03' : 'Bdn. Ratna Kusuma, S.ST');
+
+          if (typeof window !== 'undefined') {
+            localStorage.setItem(
+              'posyandu_auth_user',
+              JSON.stringify({
+                id: data.user.id,
+                email: cleanEmail,
+                role: userRole,
+                nama: userName,
+                loggedAt: new Date().toISOString(),
+              })
+            );
+            localStorage.setItem('posyandu_active_role', userRole);
+          }
+
+          setSuccessMessage(
+            `Login berhasil sebagai ${userRole === 'kader' ? 'Kader Posyandu' : 'Bidan Desa'}! Mengalihkan ke dashboard...`
+          );
           setTimeout(() => {
             router.push('/dashboard');
           }, 600);
@@ -94,31 +140,34 @@ export default function LoginPage() {
         }
       }
 
-      // 2. Fallback autentikasi lokal operasional Posyandu
-      if (email.trim() && password.trim()) {
-        if (typeof window !== 'undefined') {
-          localStorage.setItem(
-            'posyandu_auth_user',
-            JSON.stringify({
-              email: email.trim(),
-              role: email.includes('bidan') ? 'bidan' : 'kader',
-              loggedAt: new Date().toISOString(),
-            })
-          );
-        }
+      // 2. Fallback Autentikasi Posyandu (Mode offline / local storage)
+      const userRole = cleanEmail.includes('kader') ? 'kader' : 'bidan';
+      const userName =
+        userRole === 'kader' ? 'Kader Posyandu RW 03' : 'Bdn. Ratna Kusuma, S.ST';
 
-        setSuccessMessage('Login berhasil! Mengalihkan ke dashboard...');
-        setTimeout(() => {
-          router.push('/dashboard');
-        }, 600);
-      } else {
-        setErrorMessage('Mohon masukkan email dan kata sandi dengan benar.');
-        setIsLoading(false);
+      if (typeof window !== 'undefined') {
+        localStorage.setItem(
+          'posyandu_auth_user',
+          JSON.stringify({
+            email: cleanEmail,
+            role: userRole,
+            nama: userName,
+            loggedAt: new Date().toISOString(),
+          })
+        );
+        localStorage.setItem('posyandu_active_role', userRole);
       }
+
+      setSuccessMessage(
+        `Login berhasil sebagai ${userRole === 'kader' ? 'Kader Posyandu' : 'Bidan Desa'}! Mengalihkan ke dashboard...`
+      );
+      setTimeout(() => {
+        router.push('/dashboard');
+      }, 600);
     } catch (err: unknown) {
       console.error('Login error:', err);
-      // Tetap alihkan jika ada input valid
-      router.push('/dashboard');
+      setErrorMessage('Terjadi kesalahan saat masuk. Silakan periksa kembali email & kata sandi.');
+      setIsLoading(false);
     }
   };
 
@@ -304,8 +353,10 @@ export default function LoginPage() {
               </Button>
             </motion.form>
 
+
+
             {/* Footer */}
-            <motion.div variants={itemVariants} className="text-center pt-2">
+            <motion.div variants={itemVariants} className="text-center pt-1">
               <p className="text-[11px] text-slate-400">
                 Aplikasi Resmi Pelayanan Posyandu Melati RW 03 Sukamaju
               </p>

@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
+import Link from 'next/link';
 import {
   FileSpreadsheet,
   Printer,
@@ -10,6 +11,8 @@ import {
   CheckCircle2,
   ShieldCheck,
   Award,
+  Lock,
+  ArrowLeft,
 } from 'lucide-react';
 import Sidebar from '@/components/Sidebar';
 import Header from '@/components/Header';
@@ -41,6 +44,13 @@ export default function LaporanPage() {
     setPemeriksaanList(PosyanduStore.getPemeriksaan());
     setBumilList(PosyanduStore.getBumil());
     setLansiaList(PosyanduStore.getLansia());
+
+    if (typeof window !== 'undefined') {
+      const savedRole = localStorage.getItem('posyandu_active_role');
+      if (savedRole === 'kader' || savedRole === 'bidan') {
+        setCurrentRole(savedRole as UserRole);
+      }
+    }
   }, []);
 
   const handlePrint = () => {
@@ -80,42 +90,71 @@ export default function LaporanPage() {
         </div>
 
         <main className="p-4 sm:p-6 lg:p-8 space-y-6 flex-1 overflow-y-auto max-w-[1600px] mx-auto w-full">
-          {/* Action Header - Disembunyikan saat cetak */}
-          <div className="no-print space-y-4">
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-              <div>
-                <div className="flex items-center gap-2.5">
-                  <div className="w-10 h-10 rounded-2xl bg-[#fff5f6] border border-[#fce1e4] text-[#80000f] flex items-center justify-center font-bold shadow-2xs">
-                    <FileSpreadsheet className="w-5 h-5" />
-                  </div>
+          {currentRole === 'kader' ? (
+            <div className="p-8 sm:p-12 rounded-3xl bg-white border-2 border-[#fce1e4] shadow-sm text-center max-w-xl mx-auto my-12 space-y-5">
+              <div className="w-16 h-16 rounded-2xl bg-[#fff5f6] border border-[#fce1e4] text-[#80000f] flex items-center justify-center mx-auto shadow-xs">
+                <Lock className="w-8 h-8 text-[#80000f]" />
+              </div>
+              <div className="space-y-2">
+                <span className="px-3 py-1 rounded-full text-[10.5px] font-extrabold uppercase bg-[#fce1e4] text-[#80000f] border border-[#f8c8c8]">
+                  Wewenang Khusus Bidan Desa
+                </span>
+                <h2 className="text-xl font-black text-slate-900 tracking-tight">
+                  Akses Laporan Resmi Puskesmas Dibatasi
+                </h2>
+                <p className="text-xs text-slate-600 leading-relaxed max-w-md mx-auto">
+                  Pencetakan dokumen resmi ber-kop Puskesmas, pengesahan tanda tangan hukum, serta ekspor file rekapitulasi data kependudukan (CSV) merupakan kewenangan Bidan Desa / Tenaga Kesehatan Penanggung Jawab.
+                </p>
+              </div>
+              <div className="pt-2">
+                <Link
+                  href="/dashboard"
+                  className="inline-flex items-center gap-2 px-6 py-3 rounded-full bg-[#80000f] hover:bg-[#66000c] text-white text-xs font-bold transition-all shadow-md hover:scale-102"
+                >
+                  <ArrowLeft className="w-4 h-4" />
+                  <span>Kembali ke Dashboard Kader</span>
+                </Link>
+              </div>
+            </div>
+          ) : (
+            <>
+              {/* Action Header - Disembunyikan saat cetak */}
+              <div className="no-print space-y-4">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                   <div>
-                    <h1 className="text-2xl font-black text-slate-900 tracking-tight">
-                      Laporan Rekapitulasi Posyandu Melati
-                    </h1>
-                    <p className="text-xs text-slate-500 mt-0.5 font-medium">
-                      Format cetak dinas resmi bertanda tangan &bull; Dilengkapi Kop Surat Provinsi Sumatera Selatan &amp; Posyandu Melati
-                    </p>
+                    <div className="flex items-center gap-2.5">
+                      <div className="w-10 h-10 rounded-2xl bg-[#fff5f6] border border-[#fce1e4] text-[#80000f] flex items-center justify-center font-bold shadow-2xs">
+                        <FileSpreadsheet className="w-5 h-5" />
+                      </div>
+                      <div>
+                        <h1 className="text-2xl font-black text-slate-900 tracking-tight">
+                          Laporan Rekapitulasi Posyandu Melati
+                        </h1>
+                        <p className="text-xs text-slate-500 mt-0.5 font-medium">
+                          Format cetak dinas resmi bertanda tangan &bull; Dilengkapi Kop Surat Provinsi Sumatera Selatan &amp; Posyandu Melati
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="flex items-center gap-2.5 flex-wrap">
+                    <button
+                      onClick={() => setIsExportOpen(true)}
+                      className="flex items-center gap-2 px-5 py-2.5 rounded-full bg-white hover:bg-[#fff5f6] text-slate-800 hover:text-[#80000f] font-bold text-xs border border-[#fce1e4] shadow-2xs transition-all cursor-pointer"
+                    >
+                      <Download className="w-3.5 h-3.5 text-[#80000f]" />
+                      <span>Ekspor CSV</span>
+                    </button>
+                    <button
+                      onClick={handlePrint}
+                      className="flex items-center gap-2 px-6 py-2.5 rounded-full bg-[#80000f] hover:bg-[#66000c] text-white font-bold text-xs shadow-md shadow-[#80000f]/20 transition-transform hover:scale-102 cursor-pointer"
+                    >
+                      <Printer className="w-3.5 h-3.5" />
+                      <span>Cetak Lembar Resmi (A4)</span>
+                    </button>
                   </div>
                 </div>
               </div>
-
-              <div className="flex items-center gap-2.5 flex-wrap">
-                <button
-                  onClick={() => setIsExportOpen(true)}
-                  className="flex items-center gap-2 px-5 py-2.5 rounded-full bg-white hover:bg-[#fff5f6] text-slate-800 hover:text-[#80000f] font-bold text-xs border border-[#fce1e4] shadow-2xs transition-all cursor-pointer"
-                >
-                  <Download className="w-3.5 h-3.5 text-[#80000f]" />
-                  <span>Ekspor CSV</span>
-                </button>
-                <button
-                  onClick={handlePrint}
-                  className="flex items-center gap-2 px-6 py-2.5 rounded-full bg-[#80000f] hover:bg-[#66000c] text-white font-bold text-xs shadow-md shadow-[#80000f]/20 transition-transform hover:scale-102 cursor-pointer"
-                >
-                  <Printer className="w-3.5 h-3.5" />
-                  <span>Cetak Lembar Resmi (A4)</span>
-                </button>
-              </div>
-            </div>
 
             {/* Filter Bar Periode Laporan Bulanan */}
             <div className="p-4 bg-white rounded-2xl border border-slate-200 shadow-2xs flex flex-col md:flex-row md:items-center justify-between gap-4">
@@ -203,7 +242,6 @@ export default function LaporanPage() {
                 </div>
               </div>
             </div>
-          </div>
 
           {/* DOKUMEN CETAK RESMI FORMAT KERTAS A4 PEMERINTAH (FORMAL HITAM PUTIH DINAS) */}
           <div className="bg-white rounded-2xl p-8 sm:p-12 border border-slate-300 shadow-sm max-w-[210mm] mx-auto text-slate-900 print:shadow-none print:border-none print:p-0 print:m-0 print:max-w-none">
@@ -488,7 +526,9 @@ export default function LaporanPage() {
               </div>
             </div>
           </div>
-        </main>
+        </>
+      )}
+    </main>
       </div>
 
       <ExportReportModal

@@ -39,14 +39,28 @@ export default function Sidebar({ className = '' }: SidebarProps) {
   const [collapsed, setCollapsed] = useState(false);
   const [mounted, setMounted] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
+  const [activeRole, setActiveRole] = useState<'bidan' | 'kader'>('bidan');
 
-  // Synchronize collapsed state with localStorage for persistent preference
+  // Synchronize collapsed state & active role with localStorage
   useEffect(() => {
     setMounted(true);
     const saved = localStorage.getItem('posyandu_sidebar_collapsed');
     if (saved !== null) {
       setCollapsed(saved === 'true');
     }
+    const savedRole = localStorage.getItem('posyandu_active_role');
+    if (savedRole === 'kader' || savedRole === 'bidan') {
+      setActiveRole(savedRole);
+    }
+
+    const handleRoleUpdate = () => {
+      const updated = localStorage.getItem('posyandu_active_role');
+      if (updated === 'kader' || updated === 'bidan') {
+        setActiveRole(updated);
+      }
+    };
+    window.addEventListener('storage', handleRoleUpdate);
+    return () => window.removeEventListener('storage', handleRoleUpdate);
   }, []);
 
   // Listen to mobile toggle event from Header
@@ -153,6 +167,17 @@ export default function Sidebar({ className = '' }: SidebarProps) {
     },
   ];
 
+  // Saring menu sesuai wewenang: Kader fokus operasional (MBG SAW & Laporan Puskesmas khusus Bidan)
+  const filteredMainNav = mainNav.filter((item) => {
+    if (activeRole === 'kader' && item.href === '/rekomendasi-mbg') return false;
+    return true;
+  });
+
+  const filteredDataNav = dataNav.filter((item) => {
+    if (activeRole === 'kader' && item.href === '/laporan') return false;
+    return true;
+  });
+
   const sidebarTokens = {
     '--background': '#ffffff',
     '--foreground': '#0f172a',
@@ -214,7 +239,7 @@ export default function Sidebar({ className = '' }: SidebarProps) {
           <SidebarNav className="p-2 space-y-4 overflow-y-auto">
             {/* Section 1: Menu Utama */}
             <SidebarSection label="Menu Pelayanan">
-              {mainNav.map((item) => {
+              {filteredMainNav.map((item) => {
                 const isActive = pathname === item.href;
                 return (
                   <SidebarItem
@@ -237,7 +262,7 @@ export default function Sidebar({ className = '' }: SidebarProps) {
 
             {/* Section 2: Data Sasaran & Pelayanan */}
             <SidebarSection label="Data Sasaran Posyandu">
-              {dataNav.map((item) => {
+              {filteredDataNav.map((item) => {
                 const isActive = pathname === item.href;
                 return (
                   <SidebarItem
@@ -257,29 +282,31 @@ export default function Sidebar({ className = '' }: SidebarProps) {
               })}
             </SidebarSection>
 
-            {/* Section 3: Kelola Landing Page */}
-            <SidebarSection label="Kelola Landing Page">
-              {landingNav.map((item) => {
-                const isActive =
-                  pathname === item.href ||
-                  (item.href === '/kelola-galeri' && pathname === '/kelola-landing');
-                return (
-                  <SidebarItem
-                    key={item.href}
-                    icon={item.icon}
-                    href={item.href}
-                    active={isActive}
-                    className={`transition-all text-xs font-semibold rounded-xl ${
-                      isActive
-                        ? '!bg-[#80000f] !text-white font-bold shadow-md shadow-[#80000f]/25 [&_[data-slot=sidebar-item-icon]]:!text-white'
-                        : '!text-slate-600 hover:!bg-[#fff5f6] hover:!text-[#80000f] [&_[data-slot=sidebar-item-icon]]:!text-[#80000f] group-hover/sidebar-item:[&_[data-slot=sidebar-item-icon]]:!text-[#80000f]'
-                    }`}
-                  >
-                    {item.name}
-                  </SidebarItem>
-                );
-              })}
-            </SidebarSection>
+            {/* Section 3: Kelola Landing Page (Khusus Kader, disembunyikan untuk Bidan) */}
+            {activeRole === 'kader' && (
+              <SidebarSection label="Kelola Landing Page">
+                {landingNav.map((item) => {
+                  const isActive =
+                    pathname === item.href ||
+                    (item.href === '/kelola-galeri' && pathname === '/kelola-landing');
+                  return (
+                    <SidebarItem
+                      key={item.href}
+                      icon={item.icon}
+                      href={item.href}
+                      active={isActive}
+                      className={`transition-all text-xs font-semibold rounded-xl ${
+                        isActive
+                          ? '!bg-[#80000f] !text-white font-bold shadow-md shadow-[#80000f]/25 [&_[data-slot=sidebar-item-icon]]:!text-white'
+                          : '!text-slate-600 hover:!bg-[#fff5f6] hover:!text-[#80000f] [&_[data-slot=sidebar-item-icon]]:!text-[#80000f] group-hover/sidebar-item:[&_[data-slot=sidebar-item-icon]]:!text-[#80000f]'
+                      }`}
+                    >
+                      {item.name}
+                    </SidebarItem>
+                  );
+                })}
+              </SidebarSection>
+            )}
           </SidebarNav>
 
           {/* Profile & Logout Footer */}
@@ -287,12 +314,16 @@ export default function Sidebar({ className = '' }: SidebarProps) {
             <div className="w-full flex items-center justify-between overflow-hidden">
               <div className="flex items-center gap-2.5 overflow-hidden">
                 <div className="h-8 w-8 rounded-xl bg-[#80000f] text-white font-black text-xs flex items-center justify-center shrink-0 shadow-sm shadow-[#80000f]/25">
-                  🩺
+                  {activeRole === 'bidan' ? '👩‍⚕️' : '🧕'}
                 </div>
                 {!collapsed && (
                   <div className="overflow-hidden">
-                    <p className="text-xs font-bold text-slate-900 truncate">Bidan &amp; Kader</p>
-                    <p className="text-[10px] text-slate-500 font-medium truncate">Posyandu Melati RW 03</p>
+                    <p className="text-xs font-bold text-slate-900 truncate">
+                      {activeRole === 'bidan' ? 'Bdn. Ratna (Bidan Desa)' : 'Kader Posyandu RW 03'}
+                    </p>
+                    <p className="text-[10px] text-slate-500 font-medium truncate">
+                      {activeRole === 'bidan' ? 'Supervisi & Penanggung Jawab' : 'Pelaksana Meja 1–4'}
+                    </p>
                   </div>
                 )}
               </div>
@@ -371,7 +402,7 @@ export default function Sidebar({ className = '' }: SidebarProps) {
                     Menu Pelayanan
                   </p>
                   <div className="space-y-1 mt-1">
-                    {mainNav.map((item) => {
+                    {filteredMainNav.map((item) => {
                       const isActive = pathname === item.href;
                       return (
                         <Link
@@ -403,7 +434,7 @@ export default function Sidebar({ className = '' }: SidebarProps) {
                     Data Sasaran Posyandu
                   </p>
                   <div className="space-y-1 mt-1">
-                    {dataNav.map((item) => {
+                    {filteredDataNav.map((item) => {
                       const isActive = pathname === item.href;
                       return (
                         <Link
@@ -429,50 +460,56 @@ export default function Sidebar({ className = '' }: SidebarProps) {
                   </div>
                 </div>
 
-                {/* Section 3 */}
-                <div>
-                  <p className="px-3 py-1 text-[10px] font-extrabold uppercase tracking-wider text-slate-400">
-                    Kelola Landing Page
-                  </p>
-                  <div className="space-y-1 mt-1">
-                    {landingNav.map((item) => {
-                      const isActive =
-                        pathname === item.href ||
-                        (item.href === '/kelola-galeri' && pathname === '/kelola-landing');
-                      return (
-                        <Link
-                          key={item.href}
-                          href={item.href}
-                          onClick={() => setMobileOpen(false)}
-                          className={`flex items-center justify-between p-2.5 rounded-xl text-xs font-semibold transition-all ${
-                            isActive
-                              ? 'bg-[#80000f] text-white font-bold shadow-md shadow-[#80000f]/25'
-                              : 'text-slate-700 hover:bg-[#fff5f6] hover:text-[#80000f]'
-                          }`}
-                        >
-                          <div className="flex items-center gap-2.5">
-                            <span className={isActive ? 'text-white' : 'text-[#80000f]'}>
-                              {item.icon}
-                            </span>
-                            <span>{item.name}</span>
-                          </div>
-                          <ChevronRight className="w-3.5 h-3.5 opacity-50" />
-                        </Link>
-                      );
-                    })}
+                {/* Section 3 (Khusus Kader, disembunyikan untuk Bidan) */}
+                {activeRole === 'kader' && (
+                  <div>
+                    <p className="px-3 py-1 text-[10px] font-extrabold uppercase tracking-wider text-slate-400">
+                      Kelola Landing Page
+                    </p>
+                    <div className="space-y-1 mt-1">
+                      {landingNav.map((item) => {
+                        const isActive =
+                          pathname === item.href ||
+                          (item.href === '/kelola-galeri' && pathname === '/kelola-landing');
+                        return (
+                          <Link
+                            key={item.href}
+                            href={item.href}
+                            onClick={() => setMobileOpen(false)}
+                            className={`flex items-center justify-between p-2.5 rounded-xl text-xs font-semibold transition-all ${
+                              isActive
+                                ? 'bg-[#80000f] text-white font-bold shadow-md shadow-[#80000f]/25'
+                                : 'text-slate-700 hover:bg-[#fff5f6] hover:text-[#80000f]'
+                            }`}
+                          >
+                            <div className="flex items-center gap-2.5">
+                              <span className={isActive ? 'text-white' : 'text-[#80000f]'}>
+                                {item.icon}
+                              </span>
+                              <span>{item.name}</span>
+                            </div>
+                            <ChevronRight className="w-3.5 h-3.5 opacity-50" />
+                          </Link>
+                        );
+                      })}
+                    </div>
                   </div>
-                </div>
+                )}
               </div>
 
               {/* Mobile Footer */}
               <div className="p-4 border-t border-[#fce1e4] bg-[#fffafb] space-y-3">
                 <div className="flex items-center gap-3">
                   <div className="w-8 h-8 rounded-xl bg-[#80000f] text-white flex items-center justify-center font-bold text-xs shrink-0 shadow-xs">
-                    🩺
+                    {activeRole === 'bidan' ? '👩‍⚕️' : '🧕'}
                   </div>
                   <div>
-                    <p className="text-xs font-bold text-slate-900">Bidan &amp; Kader Posyandu</p>
-                    <p className="text-[10px] text-slate-500 font-medium">RW 03 Sukamaju</p>
+                    <p className="text-xs font-bold text-slate-900">
+                      {activeRole === 'bidan' ? 'Bdn. Ratna (Bidan Desa)' : 'Kader Posyandu Melati'}
+                    </p>
+                    <p className="text-[10px] text-slate-500 font-medium">
+                      {activeRole === 'bidan' ? 'Supervisi Medis RW 03' : 'Pelaksana Meja 1–4'}
+                    </p>
                   </div>
                 </div>
 

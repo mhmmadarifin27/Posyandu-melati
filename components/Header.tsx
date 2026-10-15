@@ -133,12 +133,8 @@ export default function Header({
         </div>
       </div>
 
-      {/* Cloud Supabase Status Indicator & Interactive Search Bar */}
+      {/* Interactive Search Bar */}
       <div className="flex items-center gap-3">
-        <div className="hidden xl:flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-emerald-50 border border-emerald-200 text-emerald-800 text-[11px] font-bold shadow-2xs">
-          <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-          <span>Cloud Supabase Aktif</span>
-        </div>
 
         <div ref={searchContainerRef} className="relative w-48 sm:w-72 md:w-80">
           <div className="relative w-full">

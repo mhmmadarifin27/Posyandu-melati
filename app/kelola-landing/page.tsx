@@ -19,6 +19,8 @@ import {
   Phone,
   AlertCircle,
   Link2,
+  Lock,
+  ArrowLeft,
 } from 'lucide-react';
 import Sidebar from '@/components/Sidebar';
 import Header from '@/components/Header';
@@ -74,6 +76,13 @@ export default function KelolaLandingPage({ initialTab = 'galeri' }: KelolaLandi
       setPhotos(LandingStore.getGalleryImages());
       setSchedule(LandingStore.getSchedule());
     };
+
+    if (typeof window !== 'undefined') {
+      const savedRole = localStorage.getItem('posyandu_active_role');
+      if (savedRole === 'kader' || savedRole === 'bidan') {
+        setCurrentRole(savedRole as UserRole);
+      }
+    }
 
     window.addEventListener('posyandu_landing_updated', handleUpdate);
     return () => {
@@ -219,7 +228,35 @@ export default function KelolaLandingPage({ initialTab = 'galeri' }: KelolaLandi
         />
 
         <main className="p-6 sm:p-8 space-y-6 flex-1 overflow-y-auto max-w-[1600px] mx-auto w-full">
-          {/* Header Seksi */}
+          {currentRole === 'bidan' ? (
+            <div className="p-8 sm:p-12 rounded-3xl bg-white border-2 border-[#fce1e4] shadow-sm text-center max-w-xl mx-auto my-12 space-y-5">
+              <div className="w-16 h-16 rounded-2xl bg-[#fff5f6] border border-[#fce1e4] text-[#80000f] flex items-center justify-center mx-auto shadow-xs">
+                <Lock className="w-8 h-8 text-[#80000f]" />
+              </div>
+              <div className="space-y-2">
+                <span className="px-3 py-1 rounded-full text-[10.5px] font-extrabold uppercase bg-[#fce1e4] text-[#80000f] border border-[#f8c8c8]">
+                  Wewenang Khusus Kader Posyandu
+                </span>
+                <h2 className="text-xl font-black text-slate-900 tracking-tight">
+                  Pengelolaan Landing Page Dikhususkan untuk Kader
+                </h2>
+                <p className="text-xs text-slate-600 leading-relaxed max-w-md mx-auto">
+                  Pengelolaan galeri foto kegiatan warga dan pengaturan jadwal sesi Posyandu di landing page publik merupakan ranah operasional Kader Posyandu. Tenaga Bidan berfokus pada supervisi medis, SAW MBG, dan pelaporan resmi Puskesmas.
+                </p>
+              </div>
+              <div className="pt-2">
+                <Link
+                  href="/dashboard"
+                  className="inline-flex items-center gap-2 px-6 py-3 rounded-full bg-[#80000f] hover:bg-[#66000c] text-white text-xs font-bold transition-all shadow-md hover:scale-102"
+                >
+                  <ArrowLeft className="w-4 h-4" />
+                  <span>Kembali ke Dashboard Bidan</span>
+                </Link>
+              </div>
+            </div>
+          ) : (
+            <>
+              {/* Header Seksi */}
           <div className="bg-white p-6 rounded-3xl border border-[#fce1e4] shadow-xs">
             <div>
               <div className="flex items-center gap-2 text-xs font-bold text-[#80000f] uppercase tracking-wider mb-1">
@@ -693,6 +730,8 @@ export default function KelolaLandingPage({ initialTab = 'galeri' }: KelolaLandi
                 </div>
               </div>
             </div>
+          )}
+            </>
           )}
         </main>
       </div>

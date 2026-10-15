@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
+import Link from 'next/link';
 import {
   Sparkles,
   Calculator,
@@ -13,6 +14,8 @@ import {
   TrendingDown,
   ArrowRight,
   ShieldAlert,
+  Lock,
+  ArrowLeft,
 } from 'lucide-react';
 import Sidebar from '@/components/Sidebar';
 import Header from '@/components/Header';
@@ -32,7 +35,7 @@ import {
 import { calculateSAW, CandidateItem, KRITERIA_MBG } from '@/lib/mcdm-engine';
 
 export default function RekomendasiMBGPage() {
-  const [currentRole, setCurrentRole] = useState<UserRole>('petugas');
+  const [currentRole, setCurrentRole] = useState<UserRole>('bidan');
   const [filterSasaran, setFilterSasaran] = useState<'Semua' | 'Balita' | 'Bumil' | 'Busui' | 'Lansia'>('Semua');
   const [kuotaPorsi, setKuotaPorsi] = useState<number>(10);
 
@@ -59,6 +62,12 @@ export default function RekomendasiMBGPage() {
 
   useEffect(() => {
     loadData();
+    if (typeof window !== 'undefined') {
+      const savedRole = localStorage.getItem('posyandu_active_role');
+      if (savedRole === 'kader' || savedRole === 'bidan') {
+        setCurrentRole(savedRole as UserRole);
+      }
+    }
   }, []);
 
   // Bentuk Kandidat untuk Engine SAW
@@ -260,7 +269,35 @@ export default function RekomendasiMBGPage() {
         <Header currentRole={currentRole} onRoleChange={setCurrentRole} />
 
         <main className="p-4 sm:p-6 lg:p-8 space-y-6 flex-1 overflow-y-auto max-w-[1600px] mx-auto w-full">
-          {/* Header Card (Maroon Gradient) */}
+          {currentRole === 'kader' ? (
+            <div className="p-8 sm:p-12 rounded-3xl bg-white border-2 border-[#fce1e4] shadow-sm text-center max-w-xl mx-auto my-12 space-y-5">
+              <div className="w-16 h-16 rounded-2xl bg-[#fff5f6] border border-[#fce1e4] text-[#80000f] flex items-center justify-center mx-auto shadow-xs">
+                <Lock className="w-8 h-8 text-[#80000f]" />
+              </div>
+              <div className="space-y-2">
+                <span className="px-3 py-1 rounded-full text-[10.5px] font-extrabold uppercase bg-[#fce1e4] text-[#80000f] border border-[#f8c8c8]">
+                  Wewenang Khusus Bidan Desa
+                </span>
+                <h2 className="text-xl font-black text-slate-900 tracking-tight">
+                  Akses Sistem Rekomendasi MBG (SAW) Dibatasi
+                </h2>
+                <p className="text-xs text-slate-600 leading-relaxed max-w-md mx-auto">
+                  Analisis penentuan prioritas penerima Makanan Bergizi Gratis (MBG) berbasis Simple Additive Weighting (SAW) serta penetapan menu klinis merupakan wewenang Bidan Desa / Tenaga Gizi Puskesmas. Kader berfokus pada pencatatan dan penimbangan di Meja 1–4 Posyandu.
+                </p>
+              </div>
+              <div className="pt-2">
+                <Link
+                  href="/dashboard"
+                  className="inline-flex items-center gap-2 px-6 py-3 rounded-full bg-[#80000f] hover:bg-[#66000c] text-white text-xs font-bold transition-all shadow-md hover:scale-102"
+                >
+                  <ArrowLeft className="w-4 h-4" />
+                  <span>Kembali ke Dashboard Kader</span>
+                </Link>
+              </div>
+            </div>
+          ) : (
+            <>
+              {/* Header Card (Maroon Gradient) */}
           <div className="bg-gradient-to-r from-[#80000f] via-[#990012] to-[#66000c] p-5 sm:p-7 rounded-3xl text-white shadow-md shadow-[#80000f]/25 space-y-5">
             <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
               <div>
@@ -498,6 +535,8 @@ export default function RekomendasiMBGPage() {
               </table>
             </div>
           </div>
+            </>
+          )}
         </main>
       </div>
 
