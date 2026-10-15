@@ -27,7 +27,7 @@ import Header from '@/components/Header';
 import AddWeighingModal from '@/components/AddWeighingModal';
 import KMSLegendCard from '@/components/KMSLegendCard';
 import { PosyanduStore } from '@/lib/supabase';
-import { LandingStore, PosyanduScheduleConfig } from '@/lib/landing-store';
+import { LandingStore, PosyanduScheduleConfig, DEFAULT_SCHEDULE_CONFIG } from '@/lib/landing-store';
 import { Balita, PemeriksaanBalita, IbuHamil, Lansia, UserRole } from '@/types/posyandu';
 
 export default function DashboardPage() {
@@ -37,9 +37,8 @@ export default function DashboardPage() {
   const [bumilList, setBumilList] = useState<IbuHamil[]>([]);
   const [lansiaList, setLansiaList] = useState<Lansia[]>([]);
   const [isWeighingModalOpen, setIsWeighingModalOpen] = useState(false);
-  const [scheduleConfig, setScheduleConfig] = useState<PosyanduScheduleConfig>(() =>
-    LandingStore.getSchedule()
-  );
+  // Default SSR aman untuk mencegah Hydration Mismatch antara server dan localStorage client
+  const [scheduleConfig, setScheduleConfig] = useState<PosyanduScheduleConfig>(DEFAULT_SCHEDULE_CONFIG);
 
   const loadData = () => {
     setBalitaList(PosyanduStore.getBalita());
@@ -50,6 +49,9 @@ export default function DashboardPage() {
 
   useEffect(() => {
     loadData();
+    // Sinkronkan jadwal dari localStorage setelah komponen ter-mount (Client-side only)
+    setScheduleConfig(LandingStore.getSchedule());
+
     const handleLandingUpdate = () => {
       setScheduleConfig(LandingStore.getSchedule());
     };
@@ -420,10 +422,10 @@ export default function DashboardPage() {
                     Ubah Tanggal
                   </Link>
                 </div>
-                <h3 className="font-serif font-black text-slate-900 text-lg sm:text-xl mt-3 leading-snug">
+                <h3 suppressHydrationWarning className="font-serif font-black text-slate-900 text-lg sm:text-xl mt-3 leading-snug">
                   {scheduleConfig.sessionDayName}, {scheduleConfig.sessionDate} {scheduleConfig.sessionMonth} {scheduleConfig.sessionYear}
                 </h3>
-                <p className="text-xs text-slate-600 mt-1.5 flex items-center gap-1.5 font-medium">
+                <p suppressHydrationWarning className="text-xs text-slate-600 mt-1.5 flex items-center gap-1.5 font-medium">
                   <Clock className="w-3.5 h-3.5 text-[#80000f]" />
                   <span>{scheduleConfig.sessionTime} &bull; {scheduleConfig.sessionLocation}</span>
                 </p>
@@ -431,7 +433,7 @@ export default function DashboardPage() {
                 <div className="mt-4 p-3.5 bg-white/80 rounded-2xl border border-[#fce1e4] text-xs text-[#80000f] space-y-1.5 shadow-2xs">
                   <div className="font-bold flex items-center justify-between">
                     <span className="text-[#80000f] font-extrabold">Sasaran Utama:</span>
-                    <span className="text-[10px] text-[#80000f] font-bold px-2 py-0.5 rounded-full bg-[#fce1e4] border border-[#f8c8c8]">
+                    <span suppressHydrationWarning className="text-[10px] text-[#80000f] font-bold px-2 py-0.5 rounded-full bg-[#fce1e4] border border-[#f8c8c8]">
                       {scheduleConfig.targetSummary}
                     </span>
                   </div>
