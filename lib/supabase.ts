@@ -336,8 +336,7 @@ export class PosyanduStore {
         .insert(payload)
         .then(({ error }) => {
           if (error) console.warn('Supabase addBalita error:', error.message);
-        })
-        .catch(console.warn);
+        }, console.warn);
     }
   }
 
@@ -354,8 +353,7 @@ export class PosyanduStore {
         .eq('nik', updated.nik)
         .then(({ error }) => {
           if (error) console.warn('Supabase updateBalita error:', error.message);
-        })
-        .catch(console.warn);
+        }, console.warn);
     }
   }
 
@@ -372,8 +370,7 @@ export class PosyanduStore {
         .eq('nik', target.nik)
         .then(({ error }) => {
           if (error) console.warn('Supabase deleteBalita error:', error.message);
-        })
-        .catch(console.warn);
+        }, console.warn);
     }
   }
 
@@ -449,8 +446,7 @@ export class PosyanduStore {
                   if (error) console.warn('Supabase addPemeriksaan error:', error.message);
                 });
             }
-          })
-          .catch(console.warn);
+          }, console.warn);
       }
     }
   }
@@ -487,8 +483,7 @@ export class PosyanduStore {
         .insert(payload)
         .then(({ error }) => {
           if (error) console.warn('Supabase addBumil error:', error.message);
-        })
-        .catch(console.warn);
+        }, console.warn);
     }
   }
 
@@ -504,8 +499,7 @@ export class PosyanduStore {
         .eq('nik', updated.nik)
         .then(({ error }) => {
           if (error) console.warn('Supabase updateBumil error:', error.message);
-        })
-        .catch(console.warn);
+        }, console.warn);
     }
   }
 
@@ -521,8 +515,7 @@ export class PosyanduStore {
         .eq('nik', target.nik)
         .then(({ error }) => {
           if (error) console.warn('Supabase deleteBumil error:', error.message);
-        })
-        .catch(console.warn);
+        }, console.warn);
     }
   }
 
@@ -558,8 +551,7 @@ export class PosyanduStore {
         .insert(payload)
         .then(({ error }) => {
           if (error) console.warn('Supabase addBusui error:', error.message);
-        })
-        .catch(console.warn);
+        }, console.warn);
     }
   }
 
@@ -575,8 +567,7 @@ export class PosyanduStore {
         .eq('nik', updated.nik)
         .then(({ error }) => {
           if (error) console.warn('Supabase updateBusui error:', error.message);
-        })
-        .catch(console.warn);
+        }, console.warn);
     }
   }
 
@@ -592,8 +583,7 @@ export class PosyanduStore {
         .eq('nik', target.nik)
         .then(({ error }) => {
           if (error) console.warn('Supabase deleteBusui error:', error.message);
-        })
-        .catch(console.warn);
+        }, console.warn);
     }
   }
 
@@ -629,8 +619,7 @@ export class PosyanduStore {
         .insert(payload)
         .then(({ error }) => {
           if (error) console.warn('Supabase addLansia error:', error.message);
-        })
-        .catch(console.warn);
+        }, console.warn);
     }
   }
 
@@ -646,8 +635,7 @@ export class PosyanduStore {
         .eq('nik', updated.nik)
         .then(({ error }) => {
           if (error) console.warn('Supabase updateLansia error:', error.message);
-        })
-        .catch(console.warn);
+        }, console.warn);
     }
   }
 
@@ -663,8 +651,7 @@ export class PosyanduStore {
         .eq('nik', target.nik)
         .then(({ error }) => {
           if (error) console.warn('Supabase deleteLansia error:', error.message);
-        })
-        .catch(console.warn);
+        }, console.warn);
     }
   }
 
@@ -733,8 +720,7 @@ export class PosyanduStore {
                   if (error) console.warn('Supabase addPemeriksaanLansia error:', error.message);
                 });
             }
-          })
-          .catch(console.warn);
+          }, console.warn);
       }
     }
   }
