@@ -109,7 +109,7 @@ export const INITIAL_PEMERIKSAAN: PemeriksaanBalita[] = [
   {
     id: 'p-1-3',
     balitaId: 'b-1',
-    tanggalPeriksa: '2024-09-15',
+    tanggalPeriksa: '2026-10-15',
     usiaBulan: 6,
     beratBadan: 7.0,
     tinggiBadan: 66.5,
@@ -133,7 +133,7 @@ export const INITIAL_PEMERIKSAAN: PemeriksaanBalita[] = [
   {
     id: 'p-2-3',
     balitaId: 'b-2',
-    tanggalPeriksa: '2024-09-15',
+    tanggalPeriksa: '2026-10-15',
     usiaBulan: 10,
     beratBadan: 6.2,
     tinggiBadan: 68.0,
@@ -157,7 +157,7 @@ export const INITIAL_PEMERIKSAAN: PemeriksaanBalita[] = [
   {
     id: 'p-3-1',
     balitaId: 'b-3',
-    tanggalPeriksa: '2024-09-15',
+    tanggalPeriksa: '2026-10-15',
     usiaBulan: 8,
     beratBadan: 7.8,
     tinggiBadan: 70.0,
@@ -181,7 +181,7 @@ export const INITIAL_PEMERIKSAAN: PemeriksaanBalita[] = [
   {
     id: 'p-4-1',
     balitaId: 'b-4',
-    tanggalPeriksa: '2024-09-15',
+    tanggalPeriksa: '2026-10-15',
     usiaBulan: 13,
     beratBadan: 8.8,
     tinggiBadan: 71.0,
@@ -205,7 +205,7 @@ export const INITIAL_PEMERIKSAAN: PemeriksaanBalita[] = [
   {
     id: 'p-5-1',
     balitaId: 'b-5',
-    tanggalPeriksa: '2024-09-15',
+    tanggalPeriksa: '2026-10-15',
     usiaBulan: 4,
     beratBadan: 5.7,
     tinggiBadan: 61.0,
@@ -229,7 +229,7 @@ export const INITIAL_PEMERIKSAAN: PemeriksaanBalita[] = [
   {
     id: 'p-6-1',
     balitaId: 'b-6',
-    tanggalPeriksa: '2024-09-15',
+    tanggalPeriksa: '2026-10-15',
     usiaBulan: 3,
     beratBadan: 5.9,
     tinggiBadan: 60.5,
@@ -425,7 +425,7 @@ export const INITIAL_PEMERIKSAAN_LANSIA: PemeriksaanLansia[] = [
   {
     id: 'plan-1',
     lansiaId: 'lan-1',
-    tanggalPeriksa: '2024-09-15',
+    tanggalPeriksa: '2026-10-15',
     beratBadan: 46.5,
     tinggiBadan: 160.0,
     imt: 18.2,
@@ -444,7 +444,7 @@ export const INITIAL_PEMERIKSAAN_LANSIA: PemeriksaanLansia[] = [
   {
     id: 'plan-2',
     lansiaId: 'lan-2',
-    tanggalPeriksa: '2024-09-15',
+    tanggalPeriksa: '2026-10-15',
     beratBadan: 58.0,
     tinggiBadan: 150.0,
     imt: 25.8,
@@ -463,7 +463,7 @@ export const INITIAL_PEMERIKSAAN_LANSIA: PemeriksaanLansia[] = [
   {
     id: 'plan-3',
     lansiaId: 'lan-3',
-    tanggalPeriksa: '2024-09-15',
+    tanggalPeriksa: '2026-10-15',
     beratBadan: 62.0,
     tinggiBadan: 165.0,
     imt: 22.8,

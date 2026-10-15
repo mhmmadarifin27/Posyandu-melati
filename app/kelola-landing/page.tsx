@@ -41,9 +41,8 @@ export default function KelolaLandingPage({ initialTab = 'galeri' }: KelolaLandi
   const [currentRole, setCurrentRole] = useState<UserRole>('bidan');
   const [activeTab, setActiveTab] = useState<'galeri' | 'jadwal'>(initialTab);
 
-  // State Galeri Foto
+  // State Galeri Foto (Hanya upload dari perangkat)
   const [photos, setPhotos] = useState<GalleryPhoto[]>([]);
-  const [imageUrlInput, setImageUrlInput] = useState('');
   const [photoPreview, setPhotoPreview] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -100,23 +99,22 @@ export default function KelolaLandingPage({ initialTab = 'galeri' }: KelolaLandi
     reader.readAsDataURL(file);
   };
 
-  // Submit Tambah Foto (HANYA FOTO, no judul atau deskripsi sesuai permintaan user)
+  // Submit Tambah Foto (HANYA FOTO dari upload perangkat)
   const handleAddPhoto = (e?: React.FormEvent) => {
     if (e) e.preventDefault();
-    const source = photoPreview || imageUrlInput.trim();
+    const source = photoPreview;
 
     if (!source) {
-      toast.warning('Foto Belum Dipilih', 'Silakan unggah foto dari komputer atau masukkan link URL gambar.');
+      toast.warning('Foto Belum Dipilih', 'Silakan pilih foto dari perangkat Anda terlebih dahulu.');
       return;
     }
 
     const updated = LandingStore.addGalleryPhoto(source);
     setPhotos(updated);
     setPhotoPreview(null);
-    setImageUrlInput('');
     if (fileInputRef.current) fileInputRef.current.value = '';
 
-    toast.success('Foto Ditambahkan', 'Dokumentasi berhasil masuk ke Galeri Landing Page.');
+    toast.success('Foto Ditambahkan', 'Dokumentasi berhasil diunggah ke Galeri Landing Page.');
     triggerToast('Foto berhasil ditambahkan ke Galeri Landing Page!');
   };
 
@@ -222,7 +220,7 @@ export default function KelolaLandingPage({ initialTab = 'galeri' }: KelolaLandi
 
         <main className="p-6 sm:p-8 space-y-6 flex-1 overflow-y-auto max-w-[1600px] mx-auto w-full">
           {/* Header Seksi */}
-          <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-white p-6 rounded-3xl border border-[#fce1e4] shadow-xs">
+          <div className="bg-white p-6 rounded-3xl border border-[#fce1e4] shadow-xs">
             <div>
               <div className="flex items-center gap-2 text-xs font-bold text-[#80000f] uppercase tracking-wider mb-1">
                 <PanelsTopLeft className="w-4 h-4" />
@@ -234,26 +232,6 @@ export default function KelolaLandingPage({ initialTab = 'galeri' }: KelolaLandi
               <p className="text-xs text-slate-500 mt-1">
                 Atur foto galeri dokumentasi dan tentukan jadwal pelaksanaan posyandu yang tampil langsung di halaman utama warga.
               </p>
-            </div>
-
-            <div className="flex items-center gap-3">
-              <Link
-                href="/#galeri"
-                target="_blank"
-                className="flex items-center gap-2 px-5 py-2.5 rounded-full bg-white hover:bg-[#fff5f6] text-slate-800 font-bold text-xs border border-[#fce1e4] shadow-2xs transition-all hover:scale-102"
-              >
-                <span>Lihat Galeri Landing Page</span>
-                <ExternalLink className="w-3.5 h-3.5 text-[#80000f]" />
-              </Link>
-
-              <Link
-                href="/#jadwal"
-                target="_blank"
-                className="flex items-center gap-2 px-5 py-2.5 rounded-full bg-[#80000f] hover:bg-[#66000c] text-white font-bold text-xs shadow-md shadow-[#80000f]/20 transition-transform hover:scale-102"
-              >
-                <span>Lihat Kalender Publik</span>
-                <ExternalLink className="w-3.5 h-3.5 text-[#fce1e4]" />
-              </Link>
             </div>
           </div>
 
@@ -307,7 +285,7 @@ export default function KelolaLandingPage({ initialTab = 'galeri' }: KelolaLandi
           {/* ========================================================================= */}
           {activeTab === 'galeri' && (
             <div className="space-y-8">
-              {/* Box Tambah Foto (Hanya Foto / Gambar, No Judul / Deskripsi) */}
+              {/* Box Tambah Foto (HANYA UPLOAD DARI PERANGKAT HP / KOMPUTER) */}
               <div className="bg-white rounded-3xl p-6 sm:p-7 border border-slate-200 shadow-xs space-y-6">
                 <div>
                   <h3 className="font-serif text-lg font-bold text-slate-900 flex items-center gap-2">
@@ -315,119 +293,72 @@ export default function KelolaLandingPage({ initialTab = 'galeri' }: KelolaLandi
                     <span>Tambah Foto Galeri Baru</span>
                   </h3>
                   <p className="text-xs text-slate-500 mt-1">
-                    Cukup unggah foto kegiatan Posyandu (tanpa perlu mengisi judul atau deskripsi). Foto akan langsung tampil di animasi silinder 3D landing page.
+                    Unggah foto kegiatan Posyandu langsung dari perangkat (komputer atau HP Anda). Foto akan langsung tampil di animasi silinder 3D galeri publik.
                   </p>
                 </div>
 
-                <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
-                  {/* Opsi 1: Upload File dari Komputer/HP */}
-                  <div className="lg:col-span-6 space-y-3">
-                    <label className="block text-xs font-bold uppercase tracking-wider text-slate-700">
-                      Opsi 1: Unggah Foto dari Perangkat
-                    </label>
-
-                    <div
-                      onClick={() => fileInputRef.current?.click()}
-                      className="border-2 border-dashed border-[#fce1e4] hover:border-[#80000f] bg-[#fff5f6] hover:bg-[#fff5f6]/80 rounded-2xl p-6 text-center cursor-pointer transition-colors flex flex-col items-center justify-center gap-2 min-h-[140px]"
-                    >
-                      <input
-                        ref={fileInputRef}
-                        type="file"
-                        accept="image/*"
-                        className="hidden"
-                        onChange={handleFileUpload}
-                      />
-                      <div className="w-10 h-10 rounded-full bg-[#fce1e4] text-[#80000f] flex items-center justify-center">
-                        <Upload className="w-5 h-5" />
-                      </div>
-                      <p className="text-xs font-bold text-slate-800">
-                        Klik untuk memilih file foto
+                <div className="max-w-2xl space-y-4">
+                  <div
+                    onClick={() => fileInputRef.current?.click()}
+                    className="border-2 border-dashed border-[#fce1e4] hover:border-[#80000f] bg-[#fff5f6] hover:bg-[#fff5f6]/80 rounded-2xl p-8 text-center cursor-pointer transition-colors flex flex-col items-center justify-center gap-3"
+                  >
+                    <input
+                      ref={fileInputRef}
+                      type="file"
+                      accept="image/*"
+                      className="hidden"
+                      onChange={handleFileUpload}
+                    />
+                    <div className="w-12 h-12 rounded-2xl bg-[#fce1e4] text-[#80000f] flex items-center justify-center shadow-xs">
+                      <Upload className="w-6 h-6" />
+                    </div>
+                    <div>
+                      <p className="text-sm font-bold text-slate-900">
+                        Klik untuk memilih foto dari perangkat Anda
                       </p>
-                      <p className="text-[11px] text-slate-400">
-                        Format JPG, PNG, atau WebP (Foto otomatis disesuaikan)
+                      <p className="text-xs text-slate-500 mt-0.5">
+                        Mendukung format gambar JPG, PNG, atau WebP (Foto otomatis dioptimalkan)
                       </p>
                     </div>
+                  </div>
 
-                    {/* Pratinjau Foto yang dipilih */}
-                    {photoPreview && (
-                      <div className="relative aspect-video rounded-2xl overflow-hidden border border-[#fce1e4] shadow-xs group">
+                  {/* Pratinjau Foto yang telah dipilih dari perangkat */}
+                  {photoPreview && (
+                    <div className="space-y-3 p-4 bg-slate-50 border border-slate-200 rounded-2xl">
+                      <div className="flex items-center justify-between text-xs font-bold text-slate-700">
+                        <span>Pratinjau Foto yang Dipilih:</span>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setPhotoPreview(null);
+                            if (fileInputRef.current) fileInputRef.current.value = '';
+                          }}
+                          className="text-[#80000f] hover:underline cursor-pointer"
+                        >
+                          Hapus / Ganti
+                        </button>
+                      </div>
+
+                      <div className="relative aspect-video rounded-xl overflow-hidden border border-slate-200 shadow-xs max-w-md mx-auto">
                         <img
                           src={photoPreview}
                           alt="Pratinjau Foto"
                           className="w-full h-full object-cover"
                         />
-                        <button
-                          type="button"
-                          onClick={() => setPhotoPreview(null)}
-                          className="absolute top-2 right-2 px-3 py-1 bg-slate-900/80 hover:bg-[#80000f] text-white text-[11px] font-bold rounded-lg transition-colors"
-                        >
-                          Ganti
-                        </button>
-                      </div>
-                    )}
-                  </div>
-
-                  {/* Opsi 2: Link URL / Foto Preset */}
-                  <div className="lg:col-span-6 space-y-4">
-                    <div>
-                      <label className="block text-xs font-bold uppercase tracking-wider text-slate-700 mb-1.5">
-                        Opsi 2: Tempel Link URL Foto
-                      </label>
-                      <div className="flex items-center gap-2">
-                        <div className="relative flex-1">
-                          <Link2 className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
-                          <input
-                            type="url"
-                            value={imageUrlInput}
-                            onChange={(e) => {
-                              setImageUrlInput(e.target.value);
-                              setPhotoPreview(null);
-                            }}
-                            placeholder="https://contoh.com/foto-posyandu.jpg"
-                            className="w-full pl-9 pr-3 py-2.5 rounded-xl border border-slate-200 text-xs focus:ring-2 focus:ring-[#80000f]/20 focus:border-[#80000f] focus:outline-none"
-                          />
-                        </div>
                       </div>
                     </div>
+                  )}
 
-                    <div>
-                      <label className="block text-xs font-bold uppercase tracking-wider text-slate-700 mb-2">
-                        Atau Pilih dari Foto Dokumentasi Siap Pakai:
-                      </label>
-                      <div className="grid grid-cols-3 gap-2">
-                        {presetPhotos.map((preset, idx) => (
-                          <button
-                            key={idx}
-                            type="button"
-                            onClick={() => {
-                              setPhotoPreview(preset.src);
-                              setImageUrlInput('');
-                            }}
-                            className="p-1.5 rounded-xl border border-slate-200 hover:border-[#80000f] bg-slate-50 hover:bg-[#fff5f6] text-left transition-colors flex items-center gap-2 group"
-                          >
-                            <img
-                              src={preset.src}
-                              alt={preset.label}
-                              className="w-8 h-8 rounded-lg object-cover shrink-0"
-                            />
-                            <span className="text-[10px] font-semibold text-slate-700 truncate group-hover:text-[#80000f]">
-                              {preset.label}
-                            </span>
-                          </button>
-                        ))}
-                      </div>
-                    </div>
-
-                    <div className="pt-2">
-                      <button
-                        type="button"
-                        onClick={() => handleAddPhoto()}
-                        disabled={!photoPreview && !imageUrlInput.trim()}
-                        className="w-full sm:w-auto px-7 py-3 rounded-full bg-[#80000f] hover:bg-[#66000c] disabled:bg-slate-300 disabled:cursor-not-allowed text-white font-bold text-xs uppercase tracking-wider shadow-md shadow-[#80000f]/20 transition-all hover:scale-102 active:scale-98"
-                      >
-                        + Tambahkan Foto ke Galeri
-                      </button>
-                    </div>
+                  <div className="pt-2">
+                    <button
+                      type="button"
+                      onClick={() => handleAddPhoto()}
+                      disabled={!photoPreview}
+                      className="w-full sm:w-auto px-8 py-3.5 rounded-full bg-[#80000f] hover:bg-[#66000c] disabled:bg-slate-200 disabled:text-slate-400 disabled:cursor-not-allowed text-white font-bold text-xs uppercase tracking-wider shadow-md shadow-[#80000f]/20 transition-all hover:scale-102 active:scale-98 flex items-center justify-center gap-2 cursor-pointer"
+                    >
+                      <Plus className="w-4 h-4" />
+                      <span>Tambahkan Foto ke Galeri Landing Page</span>
+                    </button>
                   </div>
                 </div>
               </div>

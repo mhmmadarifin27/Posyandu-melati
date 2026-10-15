@@ -67,7 +67,13 @@ export class PosyanduStore {
       return INITIAL_PEMERIKSAAN;
     }
     try {
-      return JSON.parse(stored);
+      const parsed: PemeriksaanBalita[] = JSON.parse(stored);
+      return parsed.map((p) => {
+        if (p.tanggalPeriksa && p.tanggalPeriksa.startsWith('2024-09')) {
+          return { ...p, tanggalPeriksa: p.tanggalPeriksa.replace('2024-09', '2026-10') };
+        }
+        return p;
+      });
     } catch {
       return INITIAL_PEMERIKSAAN;
     }
@@ -171,7 +177,13 @@ export class PosyanduStore {
       return INITIAL_PEMERIKSAAN_LANSIA;
     }
     try {
-      return JSON.parse(stored);
+      const parsed: PemeriksaanLansia[] = JSON.parse(stored);
+      return parsed.map((p) => {
+        if (p.tanggalPeriksa && p.tanggalPeriksa.startsWith('2024-09')) {
+          return { ...p, tanggalPeriksa: p.tanggalPeriksa.replace('2024-09', '2026-10') };
+        }
+        return p;
+      });
     } catch {
       return INITIAL_PEMERIKSAAN_LANSIA;
     }
