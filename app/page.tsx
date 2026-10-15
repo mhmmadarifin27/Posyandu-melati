@@ -38,17 +38,20 @@ import CurvedMenu from '@/components/ui/curved-menu';
 import PosyanduCalendar from '@/components/PosyanduCalendar';
 import TiltedGridHero from '@/components/ui/tilted-grid-hero';
 import StackingCards from '@/components/ui/stacking-cards';
-import { LandingStore, PosyanduScheduleConfig } from '@/lib/landing-store';
+import {
+  LandingStore,
+  PosyanduScheduleConfig,
+  DEFAULT_GALLERY_PHOTOS,
+  DEFAULT_SCHEDULE_CONFIG,
+} from '@/lib/landing-store';
 
 export default function LandingPage() {
   const [activeModalCard, setActiveModalCard] = useState<any | null>(null);
   const [currentSlideIndex, setCurrentSlideIndex] = useState(0);
 
-  // Koleksi Foto Dokumentasi Kegiatan & Jadwal dari LandingStore (Sinkron Realtime dengan Dashboard)
-  const [galleryImages, setGalleryImages] = useState(() => LandingStore.getGalleryImages());
-  const [scheduleConfig, setScheduleConfig] = useState<PosyanduScheduleConfig>(() =>
-    LandingStore.getSchedule()
-  );
+  // Koleksi Foto Dokumentasi Kegiatan & Jadwal (Default SSR aman untuk mencegah Hydration Mismatch)
+  const [galleryImages, setGalleryImages] = useState(DEFAULT_GALLERY_PHOTOS);
+  const [scheduleConfig, setScheduleConfig] = useState<PosyanduScheduleConfig>(DEFAULT_SCHEDULE_CONFIG);
 
   const [scrollY, setScrollY] = useState(0);
   const [scrollDirection, setScrollDirection] = useState<'up' | 'down'>('up');
@@ -72,6 +75,10 @@ export default function LandingPage() {
   }, []);
 
   useEffect(() => {
+    // Muat data dari localStorage setelah client terhidrasi tanpa error
+    setGalleryImages(LandingStore.getGalleryImages());
+    setScheduleConfig(LandingStore.getSchedule());
+
     const handleUpdate = () => {
       setGalleryImages(LandingStore.getGalleryImages());
       setScheduleConfig(LandingStore.getSchedule());
@@ -397,8 +404,8 @@ export default function LandingPage() {
             <h2 className="font-serif text-3xl sm:text-4xl font-bold text-slate-900 tracking-tight">
               Jadwal Sesi Posyandu Melati RW 03
             </h2>
-            <p className="text-sm text-slate-600 leading-relaxed">
-              Jadwal pelaksanaan posyandu untuk seluruh peserta (Balita, Ibu Hamil, Ibu Menyusui, dan Lansia) diselenggarakan <strong>serentak pada tanggal {scheduleConfig.sessionDate} {scheduleConfig.sessionMonth} {scheduleConfig.sessionYear}</strong> di {scheduleConfig.sessionLocation}. Silakan pilih tanggal pada kalender interaktif untuk melihat frame detail kegiatan terpadu.
+            <p className="text-sm text-slate-600 leading-relaxed" suppressHydrationWarning>
+              Jadwal pelaksanaan posyandu untuk seluruh peserta (Balita, Ibu Hamil, Ibu Menyusui, dan Lansia) diselenggarakan <strong suppressHydrationWarning>serentak pada tanggal {scheduleConfig.sessionDate} {scheduleConfig.sessionMonth} {scheduleConfig.sessionYear}</strong> di {scheduleConfig.sessionLocation}. Silakan pilih tanggal pada kalender interaktif untuk melihat frame detail kegiatan terpadu.
             </p>
           </div>
 

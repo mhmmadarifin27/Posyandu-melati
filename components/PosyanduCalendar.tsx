@@ -12,7 +12,7 @@ import {
   ShieldCheck,
   Heart,
 } from 'lucide-react';
-import { LandingStore, PosyanduScheduleConfig } from '@/lib/landing-store';
+import { LandingStore, PosyanduScheduleConfig, DEFAULT_SCHEDULE_CONFIG } from '@/lib/landing-store';
 
 interface MonthData {
   name: string;
@@ -24,11 +24,14 @@ interface MonthData {
 }
 
 export default function PosyanduCalendar() {
-  const [scheduleConfig, setScheduleConfig] = useState<PosyanduScheduleConfig>(() =>
-    LandingStore.getSchedule()
-  );
+  const [scheduleConfig, setScheduleConfig] = useState<PosyanduScheduleConfig>(DEFAULT_SCHEDULE_CONFIG);
 
   useEffect(() => {
+    // Sinkronkan jadwal dari localStorage setelah komponen ter-mount
+    const initial = LandingStore.getSchedule();
+    setScheduleConfig(initial);
+    setSelectedDay(initial.sessionDate);
+
     const handleUpdate = () => {
       const latest = LandingStore.getSchedule();
       setScheduleConfig(latest);
@@ -70,7 +73,7 @@ export default function PosyanduCalendar() {
   ];
 
   const [currentMonthIndex, setCurrentMonthIndex] = useState(0);
-  const [selectedDay, setSelectedDay] = useState(scheduleConfig.sessionDate || 15);
+  const [selectedDay, setSelectedDay] = useState(DEFAULT_SCHEDULE_CONFIG.sessionDate);
 
   const currentMonth = months[currentMonthIndex];
   const daysOfWeek = ['Sen', 'Sel', 'Rab', 'Kam', 'Jum', 'Sab', 'Min'];
@@ -130,8 +133,8 @@ export default function PosyanduCalendar() {
               <div className="w-8 h-8 rounded-xl bg-rose-500 text-white flex items-center justify-center shrink-0 shadow-xs">
                 <CalendarIcon className="w-4 h-4" />
               </div>
-              <div className="text-xs">
-                <p className="font-bold text-slate-900">
+              <div className="text-xs" suppressHydrationWarning>
+                <p className="font-bold text-slate-900" suppressHydrationWarning>
                   Tanggal {currentMonth.sessionDate} {currentMonth.name} ({currentMonth.sessionDayName})
                 </p>
                 <p className="text-slate-600 text-[11px] mt-0.5 leading-relaxed">
