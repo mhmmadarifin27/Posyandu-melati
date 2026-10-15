@@ -4,6 +4,7 @@ import React, { useState, useEffect } from 'react';
 import { X, Activity, Check, HeartPulse, User } from 'lucide-react';
 import { Lansia, PemeriksaanLansia } from '@/types/posyandu';
 import { PosyanduStore } from '@/lib/supabase';
+import { toast } from '@/components/ui/custom-toast';
 
 interface AddLansiaModalProps {
   isOpen: boolean;
@@ -91,6 +92,11 @@ export default function AddLansiaModal({
     };
 
     PosyanduStore.addPemeriksaanLansia(record);
+    const selectedLansia = lansiaList.find((l) => l.id === lansiaId);
+    toast.success(
+      'Pemeriksaan Lansia Berhasil Disimpan',
+      `Tensi: ${tensiSistolik}/${tensiDiastolik} mmHg (${statusTensi}) untuk ${selectedLansia?.nama || 'Lansia'}`
+    );
     onSuccess();
     onClose();
   };

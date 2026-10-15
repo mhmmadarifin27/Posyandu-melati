@@ -16,6 +16,7 @@ import Header from '@/components/Header';
 import ExportReportModal from '@/components/ExportReportModal';
 import { PosyanduStore } from '@/lib/supabase';
 import { Balita, PemeriksaanBalita, IbuHamil, Lansia, UserRole } from '@/types/posyandu';
+import { toast } from '@/components/ui/custom-toast';
 
 export default function LaporanPage() {
   const [currentRole, setCurrentRole] = useState<UserRole>('bidan');
@@ -33,6 +34,7 @@ export default function LaporanPage() {
   }, []);
 
   const handlePrint = () => {
+    toast.info('Menyiapkan Lembar Cetak', 'Membuka dialog cetak laporan resmi Puskesmas.');
     window.print();
   };
 
@@ -61,7 +63,7 @@ export default function LaporanPage() {
           <Header currentRole={currentRole} onRoleChange={setCurrentRole} />
         </div>
 
-        <main className="p-6 lg:p-8 space-y-6 flex-1 overflow-y-auto max-w-[1600px] mx-auto w-full">
+        <main className="p-4 sm:p-6 lg:p-8 space-y-6 flex-1 overflow-y-auto max-w-[1600px] mx-auto w-full">
           {/* Action Header - Disembunyikan saat cetak */}
           <div className="no-print flex flex-col sm:flex-row sm:items-center justify-between gap-4">
             <div>
@@ -219,7 +221,7 @@ export default function LaporanPage() {
                 <span>Daftar Balita &amp; Evaluasi Antropometri Kurva WHO</span>
               </h4>
               <div className="overflow-x-auto border border-slate-300 rounded-xl">
-                <table className="w-full text-left text-[11px] border-collapse">
+                <table className="w-full min-w-[720px] text-left text-[11px] border-collapse">
                   <thead>
                     <tr className="bg-[#fff5f6] font-bold text-slate-900 border-b border-slate-300">
                       <th className="p-2.5 w-8 text-center border-r border-slate-200">No</th>

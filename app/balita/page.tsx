@@ -18,6 +18,7 @@ import AddWeighingModal from '@/components/AddWeighingModal';
 import KMSLegendCard from '@/components/KMSLegendCard';
 import { PosyanduStore } from '@/lib/supabase';
 import { Balita, PemeriksaanBalita, UserRole, KMS_STATUS_INFO } from '@/types/posyandu';
+import { toast } from '@/components/ui/custom-toast';
 
 export default function BalitaPage() {
   const [currentRole, setCurrentRole] = useState<UserRole>('kader');
@@ -65,7 +66,10 @@ export default function BalitaPage() {
       createdAt: new Date().toISOString().split('T')[0],
     };
     PosyanduStore.addBalita(newB);
+    toast.success('Data Balita Disimpan', `Ananda ${newNama} berhasil didaftarkan ke sistem Posyandu Melati.`);
     setIsAddBalitaOpen(false);
+    setNewNama('');
+    setNewNik('');
     loadData();
   };
 
@@ -87,7 +91,7 @@ export default function BalitaPage() {
       <div className="flex-1 flex flex-col min-w-0">
         <Header currentRole={currentRole} onRoleChange={setCurrentRole} />
 
-        <main className="p-8 space-y-6 flex-1 overflow-y-auto">
+        <main className="p-4 sm:p-6 lg:p-8 space-y-6 flex-1 overflow-y-auto">
           {/* Header Action Bar */}
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
             <div>

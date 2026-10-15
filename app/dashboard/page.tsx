@@ -97,7 +97,7 @@ export default function DashboardPage() {
           urgentCount={urgentBalita.length + bumilKEKCount}
         />
 
-        <main className="p-6 lg:p-8 space-y-6 flex-1 overflow-y-auto max-w-[1600px] mx-auto w-full">
+        <main className="p-4 sm:p-6 lg:p-8 space-y-6 flex-1 overflow-y-auto max-w-[1600px] mx-auto w-full">
           {/* Top Page Header (Simplified as requested: Only Title & Subtitle) */}
           <div className="pt-1">
             <h1 className="font-serif text-3xl sm:text-4xl font-bold text-slate-900 tracking-tight">

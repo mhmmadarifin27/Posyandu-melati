@@ -3,6 +3,7 @@
 import React from 'react';
 import { X, Printer, Download, FileSpreadsheet } from 'lucide-react';
 import { Balita, PemeriksaanBalita, IbuHamil, Lansia } from '@/types/posyandu';
+import { toast } from '@/components/ui/custom-toast';
 
 interface ExportReportModalProps {
   isOpen: boolean;
@@ -23,6 +24,7 @@ export default function ExportReportModal({
   if (!isOpen) return null;
 
   const handlePrint = () => {
+    toast.info('Menyiapkan Format Cetak', 'Membuka dialog cetak laporan resmi Puskesmas.');
     window.print();
   };
 
@@ -58,6 +60,16 @@ export default function ExportReportModal({
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
+
+    const typeLabels = {
+      balita: 'Data Balita',
+      bumil: 'Data Ibu Hamil',
+      lansia: 'Data Lansia',
+    };
+    toast.success(
+      'Ekspor CSV Berhasil',
+      `File ${typeLabels[type]} telah berhasil diunduh.`
+    );
   };
 
   return (

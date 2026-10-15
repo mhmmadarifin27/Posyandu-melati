@@ -1,5 +1,6 @@
 import type { Metadata } from 'next';
 import './globals.css';
+import { ToastProvider } from '@/components/ui/custom-toast';
 
 export const metadata: Metadata = {
   title: 'SIP-MBG | Sistem Informasi Posyandu & Rekomendasi MBG Cerdas',
@@ -19,6 +20,7 @@ export default function RootLayout({
     <html lang="id" className="h-full">
       <body className="min-h-full flex flex-col bg-slate-50 text-slate-900 antialiased">
         {children}
+        <ToastProvider />
       </body>
     </html>
   );

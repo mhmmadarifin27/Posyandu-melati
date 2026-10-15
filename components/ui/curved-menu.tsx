@@ -220,7 +220,7 @@ const Curve: React.FC = () => {
 
   return (
     <svg
-      className="absolute top-0 -left-[99px] w-[100px] stroke-none h-full pointer-events-none"
+      className="hidden sm:block absolute top-0 -left-[99px] w-[100px] stroke-none h-full pointer-events-none"
       style={{ fill: "#ffffff" }}
     >
       <motion.path
@@ -242,7 +242,7 @@ const CurvedNavbar: React.FC<
       initial="initial"
       animate="enter"
       exit="exit"
-      className="h-[100dvh] w-screen max-w-md sm:max-w-lg fixed right-0 top-0 z-50 bg-white shadow-2xl border-l border-rose-100 flex flex-col justify-between"
+      className="h-[100dvh] w-screen max-w-[88vw] sm:max-w-md fixed right-0 top-0 z-50 bg-white shadow-2xl border-l border-rose-100 flex flex-col justify-between"
     >
       <div className="h-full pt-8 flex flex-col justify-between overflow-y-auto">
         <div className="flex flex-col gap-2 px-8 md:px-14">

@@ -5,6 +5,7 @@ import { X, Scale, Ruler, Check, AlertCircle, Baby } from 'lucide-react';
 import { Balita, PemeriksaanBalita, StatusKMS } from '@/types/posyandu';
 import { calculateZScoreBBU, getStatusGiziBBU, getKBMGram } from '@/lib/who-growth-data';
 import { PosyanduStore } from '@/lib/supabase';
+import { toast } from '@/components/ui/custom-toast';
 
 interface AddWeighingModalProps {
   isOpen: boolean;
@@ -112,6 +113,10 @@ export default function AddWeighingModal({
     };
 
     PosyanduStore.addPemeriksaan(newRecord);
+    toast.success(
+      'Penimbangan Berhasil Dicatat',
+      `BB: ${beratBadan} kg, TB: ${tinggiBadan} cm untuk ${currentBalita?.nama || 'Balita'} (Status: ${statusKMS})`
+    );
     onSuccess();
     onClose();
   };

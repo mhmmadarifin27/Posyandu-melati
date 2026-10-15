@@ -21,6 +21,7 @@ import {
   AlertCircle,
 } from 'lucide-react';
 import { supabase, isSupabaseConfigured } from '@/lib/supabase';
+import { toast } from '@/components/ui/custom-toast';
 
 export default function LoginPage() {
   const router = useRouter();
@@ -240,7 +241,10 @@ export default function LoginPage() {
                     href="#"
                     onClick={(e) => {
                       e.preventDefault();
-                      alert('Untuk reset kata sandi, hubungi Bidan Pembina di Puskesmas Pembina.');
+                      toast.info(
+                        'Bantuan Kata Sandi',
+                        'Untuk reset kata sandi, silakan hubungi Bidan Pembina di Puskesmas Pembina.'
+                      );
                     }}
                     className="text-[11px] font-semibold text-[#80000f] hover:underline"
                   >

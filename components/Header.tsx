@@ -9,6 +9,7 @@ import {
   Activity,
   X,
   ChevronRight,
+  Menu,
 } from 'lucide-react';
 import { UserRole, Balita, IbuHamil, Lansia } from '@/types/posyandu';
 import { PosyanduStore } from '@/lib/supabase';
@@ -108,9 +109,32 @@ export default function Header({
   };
 
   return (
-    <header className="h-[88px] shrink-0 bg-white/95 border-b border-[#fce1e4] px-6 sm:px-8 flex items-center justify-end sticky top-0 z-30 backdrop-blur-md pt-6 pb-3">
-      {/* Right Side Only: Interactive Real-Time Search Bar */}
-      <div ref={searchContainerRef} className="relative w-72 sm:w-96">
+    <header className="h-[76px] sm:h-[88px] shrink-0 bg-white/95 border-b border-[#fce1e4] px-4 sm:px-8 flex items-center justify-between lg:justify-end sticky top-0 z-30 backdrop-blur-md">
+      {/* Mobile Hamburger Menu Toggle (Visible on screens < lg) */}
+      <div className="flex items-center gap-2.5 lg:hidden">
+        <button
+          type="button"
+          onClick={() => window.dispatchEvent(new Event('posyandu_toggle_mobile_sidebar'))}
+          className="p-2 rounded-xl text-[#80000f] hover:bg-[#fff0f2] active:scale-95 transition-all border border-[#fce1e4] cursor-pointer shadow-2xs"
+          title="Buka Menu Navigasi"
+          aria-label="Buka Menu"
+        >
+          <Menu className="w-5 h-5" />
+        </button>
+        <div className="flex items-center gap-2">
+          <img
+            src="/images/logo-posyandu.png"
+            alt="Logo Posyandu"
+            className="w-7 h-7 object-contain"
+          />
+          <span className="font-serif font-black text-xs text-slate-900 tracking-wider hidden sm:inline-block">
+            POSYANDU <span className="text-[#80000f]">MELATI</span>
+          </span>
+        </div>
+      </div>
+
+      {/* Interactive Real-Time Search Bar */}
+      <div ref={searchContainerRef} className="relative w-48 sm:w-72 md:w-96">
         <div className="relative w-full">
           <Search className="w-4 h-4 text-[#80000f] absolute left-3.5 top-3 pointer-events-none" />
           <input
@@ -122,8 +146,8 @@ export default function Header({
               setIsSearchOpen(true);
             }}
             onFocus={() => setIsSearchOpen(true)}
-            placeholder="Cari balita, bumil, lansia, NIK..."
-            className="w-full pl-10 pr-20 py-2.5 bg-[#fff5f6]/50 hover:bg-[#fff5f6]/80 focus:bg-white rounded-full border border-[#fce1e4] text-xs font-semibold text-slate-800 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-[#80000f]/20 focus:border-[#80000f] transition-all shadow-2xs"
+            placeholder="Cari sasaran, NIK..."
+            className="w-full pl-9 sm:pl-10 pr-10 sm:pr-20 py-2 sm:py-2.5 bg-[#fff5f6]/50 hover:bg-[#fff5f6]/80 focus:bg-white rounded-full border border-[#fce1e4] text-xs font-semibold text-slate-800 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-[#80000f]/20 focus:border-[#80000f] transition-all shadow-2xs"
           />
           <div className="absolute right-3 top-2 flex items-center gap-1.5">
             {searchQuery && (
@@ -146,7 +170,7 @@ export default function Header({
 
         {/* Live Search Results Dropdown Overlay (Anchored to Right Edge) */}
         {isSearchOpen && cleanQuery.length > 0 && (
-          <div className="absolute right-0 top-full mt-2 w-full sm:w-[480px] bg-white border-2 border-[#fce1e4] rounded-3xl shadow-2xl p-3 z-50 animate-in fade-in zoom-in-95 duration-100 max-h-[480px] overflow-y-auto">
+          <div className="absolute right-0 top-full mt-2 w-[calc(100vw-2rem)] sm:w-[480px] bg-white border-2 border-[#fce1e4] rounded-3xl shadow-2xl p-3 z-50 animate-in fade-in zoom-in-95 duration-100 max-h-[480px] overflow-y-auto">
             <div className="px-3 py-2 flex items-center justify-between border-b border-[#fce1e4] text-[11px] font-bold text-slate-500">
               <span>Hasil Pencarian: &ldquo;{searchQuery}&rdquo;</span>
               <span className="px-2 py-0.5 rounded-full bg-[#fce1e4] text-[#80000f] text-[10px] font-bold">

@@ -17,6 +17,7 @@ import Header from '@/components/Header';
 import AddLansiaModal from '@/components/AddLansiaModal';
 import { PosyanduStore } from '@/lib/supabase';
 import { Lansia, PemeriksaanLansia, UserRole } from '@/types/posyandu';
+import { toast } from '@/components/ui/custom-toast';
 
 export default function LansiaPage() {
   const [currentRole, setCurrentRole] = useState<UserRole>('bidan');
@@ -62,6 +63,10 @@ export default function LansiaPage() {
       createdAt: new Date().toISOString().split('T')[0],
     };
     PosyanduStore.addLansia(newL);
+    toast.success(
+      'Lansia Berhasil Didaftarkan',
+      `Data atas nama ${nama} (${usia} tahun) berhasil disimpan ke Posyandu Melati.`
+    );
     setIsAddLansiaOpen(false);
     loadData();
   };
@@ -81,7 +86,7 @@ export default function LansiaPage() {
       <div className="flex-1 flex flex-col min-w-0">
         <Header currentRole={currentRole} onRoleChange={setCurrentRole} />
 
-        <main className="p-8 space-y-6 flex-1 overflow-y-auto">
+        <main className="p-4 sm:p-6 lg:p-8 space-y-6 flex-1 overflow-y-auto">
           {/* Header Action */}
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
             <div>
@@ -159,7 +164,7 @@ export default function LansiaPage() {
             </div>
 
             <div className="overflow-x-auto">
-              <table className="w-full text-left text-xs border-collapse">
+              <table className="w-full min-w-[760px] text-left text-xs border-collapse">
                 <thead>
                   <tr className="bg-slate-50 text-slate-500 font-bold border-b border-slate-200">
                     <th className="p-3">Nama Lansia & JK</th>

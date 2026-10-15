@@ -18,6 +18,7 @@ import Sidebar from '@/components/Sidebar';
 import Header from '@/components/Header';
 import { PosyanduStore } from '@/lib/supabase';
 import { IbuHamil, IbuMenyusui, UserRole } from '@/types/posyandu';
+import { toast } from '@/components/ui/custom-toast';
 
 export default function IbuPage() {
   const [currentRole, setCurrentRole] = useState<UserRole>('petugas');
@@ -85,6 +86,10 @@ export default function IbuPage() {
       konsumsiTTD: 30,
     };
     PosyanduStore.addBumil(newB);
+    toast.success(
+      'Data Ibu Hamil Ditambahkan',
+      `Ibu ${namaBumil} (Usia Kehamilan: ${usiaMinggu} Minggu) berhasil didaftarkan.`
+    );
     setIsAddBumilOpen(false);
     loadData();
   };
@@ -112,6 +117,10 @@ export default function IbuPage() {
       createdAt: new Date().toISOString().split('T')[0],
     };
     PosyanduStore.addBusui(newB);
+    toast.success(
+      'Data Ibu Menyusui Ditambahkan',
+      `Ibu ${namaBusui} (Bayi: ${namaBayi}, ${usiaBayi} Bulan) berhasil didaftarkan.`
+    );
     setIsAddBusuiOpen(false);
     loadData();
   };
@@ -142,7 +151,7 @@ export default function IbuPage() {
       <div className="flex-1 flex flex-col min-w-0">
         <Header currentRole={currentRole} onRoleChange={setCurrentRole} />
 
-        <main className="p-8 space-y-6 flex-1 overflow-y-auto">
+        <main className="p-4 sm:p-6 lg:p-8 space-y-6 flex-1 overflow-y-auto">
           {/* Header Action */}
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
             <div>
@@ -274,7 +283,7 @@ export default function IbuPage() {
               </div>
 
               <div className="overflow-x-auto">
-                <table className="w-full text-left text-xs border-collapse">
+                <table className="w-full min-w-[760px] text-left text-xs border-collapse">
                   <thead>
                     <tr className="bg-slate-50 text-slate-500 font-bold border-b border-slate-200">
                       <th className="p-3">Nama Bumil & Suami</th>
@@ -383,7 +392,7 @@ export default function IbuPage() {
               </div>
 
               <div className="overflow-x-auto">
-                <table className="w-full text-left text-xs border-collapse">
+                <table className="w-full min-w-[760px] text-left text-xs border-collapse">
                   <thead>
                     <tr className="bg-slate-50 text-slate-500 font-bold border-b border-slate-200">
                       <th className="p-3">Nama Ibu Menyusui</th>

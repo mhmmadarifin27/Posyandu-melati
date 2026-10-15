@@ -31,6 +31,7 @@ import {
   DEFAULT_SCHEDULE_CONFIG,
 } from '@/lib/landing-store';
 import { UserRole } from '@/types/posyandu';
+import { toast } from '@/components/ui/custom-toast';
 
 interface KelolaLandingPageProps {
   initialTab?: 'galeri' | 'jadwal';
@@ -87,7 +88,7 @@ export default function KelolaLandingPage({ initialTab = 'galeri' }: KelolaLandi
     if (!file) return;
 
     if (!file.type.startsWith('image/')) {
-      alert('Mohon pilih file gambar (JPG, PNG, atau WebP).');
+      toast.warning('Format Tidak Sesuai', 'Mohon pilih file gambar (JPG, PNG, atau WebP).');
       return;
     }
 
@@ -105,7 +106,7 @@ export default function KelolaLandingPage({ initialTab = 'galeri' }: KelolaLandi
     const source = photoPreview || imageUrlInput.trim();
 
     if (!source) {
-      alert('Silakan unggah foto dari komputer atau masukkan link URL gambar.');
+      toast.warning('Foto Belum Dipilih', 'Silakan unggah foto dari komputer atau masukkan link URL gambar.');
       return;
     }
 
@@ -115,43 +116,72 @@ export default function KelolaLandingPage({ initialTab = 'galeri' }: KelolaLandi
     setImageUrlInput('');
     if (fileInputRef.current) fileInputRef.current.value = '';
 
+    toast.success('Foto Ditambahkan', 'Dokumentasi berhasil masuk ke Galeri Landing Page.');
     triggerToast('Foto berhasil ditambahkan ke Galeri Landing Page!');
   };
 
   // Hapus Foto
   const handleDeletePhoto = (id: string) => {
     if (photos.length <= 1) {
-      alert('Minimal harus ada 1 foto di galeri landing page.');
+      toast.info('Batas Minimal', 'Minimal harus ada 1 foto di galeri landing page.');
       return;
     }
-    const updated = LandingStore.deleteGalleryPhoto(id);
-    setPhotos(updated);
-    triggerToast('Foto berhasil dihapus dari Galeri.');
+
+    toast.confirm({
+      title: 'Hapus Foto Galeri',
+      description: 'Apakah Anda yakin ingin menghapus foto dokumentasi ini dari galeri publik?',
+      confirmText: 'Ya, Hapus',
+      cancelText: 'Batal',
+      type: 'danger',
+      onConfirm: () => {
+        const updated = LandingStore.deleteGalleryPhoto(id);
+        setPhotos(updated);
+        toast.success('Foto Dihapus', 'Foto berhasil dihapus dari galeri.');
+        triggerToast('Foto berhasil dihapus dari Galeri.');
+      },
+    });
   };
 
   // Reset Foto Galeri ke Default
   const handleResetPhotos = () => {
-    if (confirm('Kembalikan galeri ke 6 foto standar Posyandu Melati?')) {
-      const reset = LandingStore.resetGalleryPhotos();
-      setPhotos(reset);
-      triggerToast('Galeri foto berhasil dikembalikan ke standar.');
-    }
+    toast.confirm({
+      title: 'Reset Galeri Standar',
+      description: 'Kembalikan galeri ke 6 foto dokumentasi resmi standar Posyandu Melati?',
+      confirmText: 'Reset Standar',
+      cancelText: 'Batal',
+      type: 'warning',
+      onConfirm: () => {
+        const reset = LandingStore.resetGalleryPhotos();
+        setPhotos(reset);
+        toast.success('Galeri Direset', 'Galeri foto berhasil dikembalikan ke standar.');
+        triggerToast('Galeri foto berhasil dikembalikan ke standar.');
+      },
+    });
   };
 
   // Simpan Perubahan Jadwal
   const handleSaveSchedule = (e: React.FormEvent) => {
     e.preventDefault();
     LandingStore.saveSchedule(schedule);
+    toast.success('Jadwal Posyandu Disimpan', 'Jadwal sesi berhasil diperbarui dan tersinkronisasi.');
     triggerToast('Jadwal Posyandu berhasil diperbarui & terintegrasi ke Landing Page!');
   };
 
   // Reset Jadwal ke Default
   const handleResetSchedule = () => {
-    if (confirm('Kembalikan jadwal posyandu ke konfigurasi standar (Tanggal 15)?')) {
-      const reset = LandingStore.resetSchedule();
-      setSchedule(reset);
-      triggerToast('Jadwal berhasil dikembalikan ke default.');
-    }
+    toast.confirm({
+      title: 'Reset Jadwal Standar',
+      description: 'Kembalikan konfigurasi jadwal posyandu ke standar setiap tanggal 15?',
+      confirmText: 'Reset Jadwal',
+      cancelText: 'Batal',
+      type: 'warning',
+      onConfirm: () => {
+        const reset = LandingStore.resetSchedule();
+        setSchedule(reset);
+        toast.success('Jadwal Direset', 'Jadwal berhasil dikembalikan ke tanggal 15.');
+        triggerToast('Jadwal berhasil dikembalikan ke default.');
+      },
+    });
   };
 
   const triggerToast = (msg: string) => {

@@ -259,9 +259,9 @@ export default function RekomendasiMBGPage() {
       <div className="flex-1 flex flex-col min-w-0">
         <Header currentRole={currentRole} onRoleChange={setCurrentRole} />
 
-        <main className="p-6 lg:p-8 space-y-6 flex-1 overflow-y-auto max-w-[1600px] mx-auto w-full">
+        <main className="p-4 sm:p-6 lg:p-8 space-y-6 flex-1 overflow-y-auto max-w-[1600px] mx-auto w-full">
           {/* Header Card (Maroon Gradient) */}
-          <div className="bg-gradient-to-r from-[#80000f] via-[#990012] to-[#66000c] p-6 sm:p-7 rounded-3xl text-white shadow-md shadow-[#80000f]/25 space-y-5">
+          <div className="bg-gradient-to-r from-[#80000f] via-[#990012] to-[#66000c] p-5 sm:p-7 rounded-3xl text-white shadow-md shadow-[#80000f]/25 space-y-5">
             <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
               <div>
                 <div className="flex items-center gap-3">
@@ -284,7 +284,7 @@ export default function RekomendasiMBGPage() {
                   setStepDetail(sawResult.steps);
                   setIsCalcModalOpen(true);
                 }}
-                className="flex items-center gap-2 px-5 py-2.5 rounded-full bg-white hover:bg-[#fff5f6] text-[#80000f] font-bold text-xs shadow-sm transition-transform hover:scale-102 shrink-0"
+                className="flex items-center gap-2 px-5 py-2.5 rounded-full bg-white hover:bg-[#fff5f6] text-[#80000f] font-bold text-xs shadow-sm transition-transform hover:scale-102 shrink-0 self-start sm:self-auto"
               >
                 <Calculator className="w-3.5 h-3.5 text-[#80000f]" />
                 <span>Lihat Langkah Perhitungan SAW</span>
@@ -293,9 +293,9 @@ export default function RekomendasiMBGPage() {
 
             {/* Filter Sasaran & Kuota Porsi */}
             <div className="pt-4 border-t border-white/25 flex flex-wrap items-center justify-between gap-4">
-              <div className="flex items-center gap-2.5">
-                <span className="text-xs font-bold text-white">Filter Sasaran:</span>
-                <div className="inline-flex p-1 bg-white/20 backdrop-blur rounded-full border border-white/30">
+              <div className="flex items-center gap-2.5 overflow-x-auto max-w-full pb-1">
+                <span className="text-xs font-bold text-white shrink-0">Filter Sasaran:</span>
+                <div className="inline-flex p-1 bg-white/20 backdrop-blur rounded-full border border-white/30 shrink-0">
                   {(['Semua', 'Balita', 'Bumil', 'Busui', 'Lansia'] as const).map((t) => (
                     <button
                       key={t}
@@ -375,7 +375,7 @@ export default function RekomendasiMBGPage() {
             </div>
 
             <div className="overflow-x-auto">
-              <table className="w-full text-left text-xs border-collapse">
+              <table className="w-full min-w-[760px] text-left text-xs border-collapse">
                 <thead>
                   <tr className="bg-[#fff5f6] text-[#80000f] font-bold border-b border-[#fce1e4]">
                     <th className="p-3.5 w-16 text-center">Peringkat</th>
