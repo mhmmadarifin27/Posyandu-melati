@@ -344,38 +344,6 @@ export default function BalitaPage() {
                       <option value={2027}>2027</option>
                     </select>
                   </div>
-
-                  {/* Quick Switcher Chips */}
-                  <div className="flex items-center gap-1.5 pl-2 border-l border-slate-200">
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setSelectedMonth(10);
-                        setSelectedYear(2026);
-                      }}
-                      className={`px-3 py-1 rounded-full text-[11px] font-bold transition-colors cursor-pointer ${
-                        selectedMonth === 10 && selectedYear === 2026
-                          ? 'bg-[#80000f] text-white shadow-2xs'
-                          : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
-                      }`}
-                    >
-                      Okt 2026
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setSelectedMonth(11);
-                        setSelectedYear(2026);
-                      }}
-                      className={`px-3 py-1 rounded-full text-[11px] font-bold transition-colors cursor-pointer ${
-                        selectedMonth === 11 && selectedYear === 2026
-                          ? 'bg-[#80000f] text-white shadow-2xs'
-                          : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
-                      }`}
-                    >
-                      Nov 2026 (0)
-                    </button>
-                  </div>
                 </div>
               </div>
 

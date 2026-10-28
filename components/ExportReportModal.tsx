@@ -10,8 +10,8 @@ import {
   Users,
   CheckCircle2,
   FileText,
-  Calendar,
 } from 'lucide-react';
+import * as XLSX from 'xlsx';
 import { Balita, PemeriksaanBalita, IbuHamil, Lansia, PemeriksaanLansia } from '@/types/posyandu';
 import { PosyanduStore } from '@/lib/supabase';
 import { toast } from '@/components/ui/custom-toast';
@@ -45,228 +45,321 @@ export default function ExportReportModal({
   ];
 
   const currentMonthName = MONTH_NAMES[selectedMonth - 1] || 'Oktober';
+  const targetMonthStr = `${selectedYear}-${String(selectedMonth).padStart(2, '0')}`;
 
-  // Helper untuk escape format CSV agar aman di Excel
-  const escapeCSV = (val: any) => {
-    if (val === null || val === undefined) return '""';
-    const str = String(val).replace(/"/g, '""');
-    return `"${str}"`;
+  // =========================================================================
+  // DATASET GENERATOR: BALITA & KMS
+  // =========================================================================
+  const getBalitaData = () => {
+    const headers = [
+      'No',
+      'NIK Balita',
+      'Nama Balita',
+      'Jenis Kelamin',
+      'Tanggal Lahir',
+      'Usia Saat Ini (Bulan)',
+      'Nama Ibu Kandung',
+      'Nama Ayah',
+      'Alamat RT/RW',
+      'Posyandu',
+      'Desil Ekonomi',
+      'Tanggal Timbang Terakhir',
+      'Berat Badan (kg)',
+      'Tinggi/Panjang Badan (cm)',
+      'Lingkar Kepala (cm)',
+      'Cara Ukur',
+      'Z-Score BB/U (SD)',
+      'Status Gizi (BB/U)',
+      'Status KMS (N/T/2T/BGM)',
+      'Kenaikan BB (kg)',
+      'KBM Target (kg)',
+      'Pemberian Vitamin A',
+      'Obat Cacing',
+      'Status Imunisasi',
+      'Keluhan Kesehatan',
+      'Catatan Kader / Rekomendasi MBG',
+    ];
+
+    const rows = balitaList.map((b, idx) => {
+      const records = pemeriksaanList
+        .filter((p) => p.balitaId === b.id)
+        .sort((x, y) => new Date(y.tanggalPeriksa).getTime() - new Date(x.tanggalPeriksa).getTime());
+
+      const monthlyRec = records.find((p) => p.tanggalPeriksa.startsWith(targetMonthStr)) || records[0];
+
+      return [
+        idx + 1,
+        String(b.nik),
+        b.nama,
+        b.jenisKelamin === 'L' ? 'Laki-laki' : 'Perempuan',
+        b.tanggalLahir,
+        monthlyRec ? monthlyRec.usiaBulan : '-',
+        b.namaIbu,
+        b.namaAyah,
+        b.alamat,
+        'Posyandu Melati RW 03',
+        `Desil ${b.desilEkonomi}`,
+        monthlyRec ? monthlyRec.tanggalPeriksa : 'Belum Ditimbang',
+        monthlyRec ? monthlyRec.beratBadan : '-',
+        monthlyRec ? monthlyRec.tinggiBadan : '-',
+        monthlyRec ? monthlyRec.lingkarKepala : '-',
+        monthlyRec ? monthlyRec.caraUkur : '-',
+        monthlyRec ? monthlyRec.zScoreBBU : '-',
+        monthlyRec ? monthlyRec.statusBBU : '-',
+        monthlyRec ? monthlyRec.statusKMS : 'Belum Ditimbang',
+        monthlyRec ? monthlyRec.kenaikanBB : '-',
+        monthlyRec ? monthlyRec.kbm : '-',
+        monthlyRec ? (monthlyRec.vitaminA ? 'Sudah Diberikan' : 'Belum') : '-',
+        monthlyRec ? (monthlyRec.obatCacing ? 'Sudah Diberikan' : 'Belum') : '-',
+        monthlyRec ? monthlyRec.imunisasi : '-',
+        monthlyRec ? monthlyRec.keluhan : '-',
+        monthlyRec
+          ? monthlyRec.catatanKader
+          : `Menunggu sesi penimbangan posyandu bulan ${currentMonthName} ${selectedYear}`,
+      ];
+    });
+
+    const colWidths = [
+      6, 22, 26, 15, 16, 14, 24, 24, 30, 24, 15, 18, 15, 16, 16, 14, 16, 18, 16, 15, 15, 16, 15, 18, 22, 45,
+    ];
+
+    return { headers, rows, colWidths };
   };
 
-  const exportCSV = (type: 'balita' | 'bumil' | 'lansia') => {
-    let csvContent = '';
-    let filename = '';
+  // =========================================================================
+  // DATASET GENERATOR: IBU HAMIL & KIA
+  // =========================================================================
+  const getBumilData = () => {
+    const headers = [
+      'No',
+      'NIK Ibu Hamil',
+      'Nama Ibu Hamil',
+      'Tanggal Lahir',
+      'Nama Suami',
+      'Alamat Lengkap',
+      'Posyandu',
+      'No WhatsApp / HP',
+      'HPHT',
+      'HPL',
+      'Usia Kehamilan (Minggu)',
+      'Gravida (G)',
+      'Partus (P)',
+      'Abortus (A)',
+      'LiLA Awal (cm)',
+      'LiLA Saat Ini (cm)',
+      'Kadar Hb (g/dL)',
+      'Status Risiko KEK',
+      'Status Anemia',
+      'Buku KIA',
+      'Konsumsi TTD (Butir)',
+      'Desil Ekonomi',
+      'Rencana Intervensi MBG',
+    ];
+
+    const rows = bumilList.map((bm, idx) => {
+      const isKEK = bm.statusKEK || bm.lilaSaatIni < 23.5;
+      return [
+        idx + 1,
+        String(bm.nik),
+        bm.nama,
+        bm.tanggalLahir,
+        bm.namaSuami,
+        bm.alamat,
+        'Posyandu Melati RW 03',
+        String(bm.noHp),
+        bm.hpht,
+        bm.hpl,
+        bm.usiaKehamilanMinggu,
+        bm.gravida,
+        bm.partus,
+        bm.abortus,
+        bm.lilaAwal,
+        bm.lilaSaatIni,
+        bm.hb,
+        isKEK ? 'Risiko KEK (Wajib MBG)' : 'Normal',
+        bm.statusAnemia ? 'Anemia' : 'Normal',
+        bm.bukuKIA ? 'Lengkap & Terverifikasi' : 'Belum Lengkap',
+        bm.konsumsiTTD,
+        `Desil ${bm.desilEkonomi}`,
+        isKEK
+          ? 'Alokasi Menu Tambahan Padat Protein & Tablet Tambah Darah Harian'
+          : 'Pemantauan Rutin Antenatal',
+      ];
+    });
+
+    const colWidths = [
+      6, 22, 26, 16, 24, 30, 24, 22, 16, 16, 16, 12, 12, 12, 16, 16, 16, 24, 16, 22, 18, 16, 45,
+    ];
+
+    return { headers, rows, colWidths };
+  };
+
+  // =========================================================================
+  // DATASET GENERATOR: LANSIA & PTM
+  // =========================================================================
+  const getLansiaData = () => {
+    const headers = [
+      'No',
+      'NIK Lansia',
+      'Nama Lansia',
+      'Jenis Kelamin',
+      'Tanggal Lahir',
+      'Usia (Tahun)',
+      'Nama Keluarga / Pendamping',
+      'Alamat Lengkap',
+      'Posyandu',
+      'No WhatsApp / Telepon',
+      'Golongan Darah',
+      'Riwayat Komorbid',
+      'Tanggal Periksa Terakhir',
+      'Berat Badan (kg)',
+      'Tinggi Badan (cm)',
+      'Indeks Massa Tubuh (IMT)',
+      'Status Gizi Lansia',
+      'Tensi Sistolik (mmHg)',
+      'Tensi Diastolik (mmHg)',
+      'Status Tekanan Darah',
+      'Gula Darah (mg/dL)',
+      'Status Gula Darah',
+      'Kolesterol Total (mg/dL)',
+      'Asam Urat (mg/dL)',
+      'Keluhan Kesehatan',
+      'Tindakan Edukasi & Rekomendasi Menu MBG Lansia',
+    ];
+
+    const periksaLansiaList = PosyanduStore.getPemeriksaanLansia();
+
+    const rows = lansiaList.map((l, idx) => {
+      const lastExam = periksaLansiaList.find((p) => p.lansiaId === l.id);
+      return [
+        idx + 1,
+        String(l.nik),
+        l.nama,
+        l.jenisKelamin === 'L' ? 'Laki-laki' : 'Perempuan',
+        l.tanggalLahir,
+        l.usiaTahun,
+        l.namaKeluarga,
+        l.alamat,
+        'Posyandu Melati RW 03',
+        String(l.noHp),
+        l.golonganDarah,
+        Array.isArray(l.riwayatPenyakit) ? l.riwayatPenyakit.join('; ') : l.riwayatPenyakit,
+        lastExam ? lastExam.tanggalPeriksa : 'Belum Diperiksa Bulan Ini',
+        lastExam ? lastExam.beratBadan : '-',
+        lastExam ? lastExam.tinggiBadan : '-',
+        lastExam ? lastExam.imt : '-',
+        lastExam ? lastExam.statusGizi : '-',
+        lastExam ? lastExam.tensiSistolik : '-',
+        lastExam ? lastExam.tensiDiastolik : '-',
+        lastExam ? lastExam.statusTensi : '-',
+        lastExam ? lastExam.gulaDarah : '-',
+        lastExam ? lastExam.statusGulaDarah : '-',
+        lastExam ? lastExam.kolesterol : '-',
+        lastExam ? lastExam.asamUrat : '-',
+        lastExam ? lastExam.keluhan : '-',
+        lastExam
+          ? lastExam.tindakanEdukasi
+          : 'Konseling pola makan rendah garam & aktivitas fisik rutin',
+      ];
+    });
+
+    const colWidths = [
+      6, 22, 26, 14, 16, 14, 24, 30, 24, 22, 14, 26, 18, 15, 15, 14, 18, 16, 16, 20, 16, 18, 18, 16, 22, 45,
+    ];
+
+    return { headers, rows, colWidths };
+  };
+
+  // =========================================================================
+  // EKSPOR FORMAT EXCEL RESMI (.XLSX) - KOLOM PAS & NIK 16 DIGIT UTUH
+  // =========================================================================
+  const exportExcel = (type: 'balita' | 'bumil' | 'lansia') => {
     const dateStamp = `${selectedYear}_${String(selectedMonth).padStart(2, '0')}`;
+    let dataset: { headers: string[]; rows: any[][]; colWidths: number[] };
+    let sheetName = '';
+    let filename = '';
 
     if (type === 'balita') {
-      filename = `Data_Balita_Antropometri_Posyandu_Melati_${dateStamp}.csv`;
-      
-      // Header Kolom Lengkap Standar e-PPGBM Kemenkes RI
-      const headers = [
-        'No',
-        'NIK Balita',
-        'Nama Balita',
-        'Jenis Kelamin',
-        'Tanggal Lahir',
-        'Usia Saat Ini (Bulan)',
-        'Nama Ibu Kandung',
-        'Nama Ayah',
-        'Alamat RT/RW',
-        'Posyandu',
-        'Desil Ekonomi',
-        'Tanggal Timbang Terakhir',
-        'Berat Badan (kg)',
-        'Tinggi/Panjang Badan (cm)',
-        'Lingkar Kepala (cm)',
-        'Cara Ukur',
-        'Z-Score BB/U (SD)',
-        'Status Gizi (BB/U)',
-        'Status KMS (N/T/2T/BGM)',
-        'Kenaikan BB (kg)',
-        'KBM Target (kg)',
-        'Pemberian Vitamin A',
-        'Obat Cacing',
-        'Status Imunisasi',
-        'Keluhan Kesehatan',
-        'Catatan Kader / Rekomendasi MBG',
-      ];
-      csvContent += headers.map(escapeCSV).join(',') + '\n';
-
-      balitaList.forEach((b, idx) => {
-        // Ambil pemeriksaan bulan terpilih atau yang terakhir
-        const targetMonthStr = `${selectedYear}-${String(selectedMonth).padStart(2, '0')}`;
-        const records = pemeriksaanList
-          .filter((p) => p.balitaId === b.id)
-          .sort((x, y) => new Date(y.tanggalPeriksa).getTime() - new Date(x.tanggalPeriksa).getTime());
-        
-        const monthlyRec = records.find((p) => p.tanggalPeriksa.startsWith(targetMonthStr)) || records[0];
-
-        const row = [
-          idx + 1,
-          b.nik,
-          b.nama,
-          b.jenisKelamin === 'L' ? 'Laki-laki' : 'Perempuan',
-          b.tanggalLahir,
-          monthlyRec ? monthlyRec.usiaBulan : '-',
-          b.namaIbu,
-          b.namaAyah,
-          b.alamat,
-          'Posyandu Melati RW 03',
-          `Desil ${b.desilEkonomi}`,
-          monthlyRec ? monthlyRec.tanggalPeriksa : 'Belum Ditimbang',
-          monthlyRec ? monthlyRec.beratBadan : '-',
-          monthlyRec ? monthlyRec.tinggiBadan : '-',
-          monthlyRec ? monthlyRec.lingkarKepala : '-',
-          monthlyRec ? monthlyRec.caraUkur : '-',
-          monthlyRec ? monthlyRec.zScoreBBU : '-',
-          monthlyRec ? monthlyRec.statusBBU : '-',
-          monthlyRec ? monthlyRec.statusKMS : 'Belum Ditimbang',
-          monthlyRec ? monthlyRec.kenaikanBB : '-',
-          monthlyRec ? monthlyRec.kbm : '-',
-          monthlyRec ? (monthlyRec.vitaminA ? 'Sudah Diberikan' : 'Belum') : '-',
-          monthlyRec ? (monthlyRec.obatCacing ? 'Sudah Diberikan' : 'Belum') : '-',
-          monthlyRec ? monthlyRec.imunisasi : '-',
-          monthlyRec ? monthlyRec.keluhan : '-',
-          monthlyRec
-            ? monthlyRec.catatanKader
-            : `Menunggu pelaksanaan posyandu bulan ${currentMonthName} ${selectedYear}`,
-        ];
-        csvContent += row.map(escapeCSV).join(',') + '\n';
-      });
+      dataset = getBalitaData();
+      sheetName = 'Data Balita & KMS';
+      filename = `Data_Balita_Antropometri_Posyandu_Melati_${dateStamp}.xlsx`;
     } else if (type === 'bumil') {
-      filename = `Data_Ibu_Hamil_KIA_Posyandu_Melati_${dateStamp}.csv`;
-
-      // Header Kolom Lengkap Standar Maternal Dinkes
-      const headers = [
-        'No',
-        'NIK Ibu Hamil',
-        'Nama Ibu Hamil',
-        'Tanggal Lahir',
-        'Nama Suami',
-        'Alamat Lengkap',
-        'Posyandu',
-        'No WhatsApp / Telepon',
-        'HPHT',
-        'HPL',
-        'Usia Kehamilan (Minggu)',
-        'Gravida (G)',
-        'Partus (P)',
-        'Abortus (A)',
-        'LiLA Awal (cm)',
-        'LiLA Saat Ini (cm)',
-        'Kadar Hb (g/dL)',
-        'Status Risiko KEK',
-        'Status Anemia',
-        'Buku KIA',
-        'Konsumsi TTD (Butir)',
-        'Desil Ekonomi',
-        'Rencana Intervensi MBG',
-      ];
-      csvContent += headers.map(escapeCSV).join(',') + '\n';
-
-      bumilList.forEach((bm, idx) => {
-        const isKEK = bm.statusKEK || bm.lilaSaatIni < 23.5;
-        const row = [
-          idx + 1,
-          bm.nik,
-          bm.nama,
-          bm.tanggalLahir,
-          bm.namaSuami,
-          bm.alamat,
-          'Posyandu Melati RW 03',
-          bm.noHp,
-          bm.hpht,
-          bm.hpl,
-          bm.usiaKehamilanMinggu,
-          bm.gravida,
-          bm.partus,
-          bm.abortus,
-          bm.lilaAwal,
-          bm.lilaSaatIni,
-          bm.hb,
-          isKEK ? 'Risiko KEK (Wajib MBG)' : 'Normal',
-          bm.statusAnemia ? 'Anemia' : 'Normal',
-          bm.bukuKIA ? 'Lengkap & Terverifikasi' : 'Belum Lengkap',
-          bm.konsumsiTTD,
-          `Desil ${bm.desilEkonomi}`,
-          isKEK
-            ? 'Alokasi Menu Tambahan Padat Protein & Tablet Tambah Darah Harian'
-            : 'Pemantauan Rutin Antenatal',
-        ];
-        csvContent += row.map(escapeCSV).join(',') + '\n';
-      });
+      dataset = getBumilData();
+      sheetName = 'Data Bumil & KIA';
+      filename = `Data_Ibu_Hamil_KIA_Posyandu_Melati_${dateStamp}.xlsx`;
     } else {
-      filename = `Data_Lansia_PTM_Posyandu_Melati_${dateStamp}.csv`;
-      const periksaLansiaList = PosyanduStore.getPemeriksaanLansia();
-
-      // Header Kolom Lengkap Standar Posyandu Lansia
-      const headers = [
-        'No',
-        'NIK Lansia',
-        'Nama Lansia',
-        'Jenis Kelamin',
-        'Tanggal Lahir',
-        'Usia (Tahun)',
-        'Nama Keluarga / Pendamping',
-        'Alamat Lengkap',
-        'Posyandu',
-        'No WhatsApp / Telepon',
-        'Golongan Darah',
-        'Riwayat Penyakit Komorbid',
-        'Tanggal Periksa Terakhir',
-        'Berat Badan (kg)',
-        'Tinggi Badan (cm)',
-        'Indeks Massa Tubuh (IMT)',
-        'Status Gizi Lansia',
-        'Tensi Sistolik (mmHg)',
-        'Tensi Diastolik (mmHg)',
-        'Status Tekanan Darah',
-        'Gula Darah Sewaktu (mg/dL)',
-        'Status Gula Darah',
-        'Kolesterol Total (mg/dL)',
-        'Asam Urat (mg/dL)',
-        'Keluhan Kesehatan',
-        'Tindakan Edukasi & Rekomendasi Menu MBG Lansia',
-      ];
-      csvContent += headers.map(escapeCSV).join(',') + '\n';
-
-      lansiaList.forEach((l, idx) => {
-        const lastExam = periksaLansiaList.find((p) => p.lansiaId === l.id);
-        const row = [
-          idx + 1,
-          l.nik,
-          l.nama,
-          l.jenisKelamin === 'L' ? 'Laki-laki' : 'Perempuan',
-          l.tanggalLahir,
-          l.usiaTahun,
-          l.namaKeluarga,
-          l.alamat,
-          'Posyandu Melati RW 03',
-          l.noHp,
-          l.golonganDarah,
-          Array.isArray(l.riwayatPenyakit) ? l.riwayatPenyakit.join('; ') : l.riwayatPenyakit,
-          lastExam ? lastExam.tanggalPeriksa : 'Belum Diperiksa Bulan Ini',
-          lastExam ? lastExam.beratBadan : '-',
-          lastExam ? lastExam.tinggiBadan : '-',
-          lastExam ? lastExam.imt : '-',
-          lastExam ? lastExam.statusGizi : '-',
-          lastExam ? lastExam.tensiSistolik : '-',
-          lastExam ? lastExam.tensiDiastolik : '-',
-          lastExam ? lastExam.statusTensi : '-',
-          lastExam ? lastExam.gulaDarah : '-',
-          lastExam ? lastExam.statusGulaDarah : '-',
-          lastExam ? lastExam.kolesterol : '-',
-          lastExam ? lastExam.asamUrat : '-',
-          lastExam ? lastExam.keluhan : '-',
-          lastExam
-            ? lastExam.tindakanEdukasi
-            : 'Konseling diet sehat rendah garam & senam lansia',
-        ];
-        csvContent += row.map(escapeCSV).join(',') + '\n';
-      });
+      dataset = getLansiaData();
+      sheetName = 'Data Lansia PTM';
+      filename = `Data_Lansia_PTM_Posyandu_Melati_${dateStamp}.xlsx`;
     }
 
-    // Menggunakan UTF-8 BOM (\uFEFF) agar Microsoft Excel di Windows membaca huruf, angka, dan aksen secara rapi tanpa berantakan
+    const allData = [dataset.headers, ...dataset.rows];
+    const ws = XLSX.utils.aoa_to_sheet(allData);
+
+    // Set kolom agar lebar pas dan TIDAK PERNAH muncul tanda ######
+    ws['!cols'] = dataset.colWidths.map((w) => ({ wch: w }));
+
+    // Pastikan setiap cell NIK (kolom B / C=1) dan nomor HP bertipe 's' (string) agar tidak jadi scientific 3.2E+15
+    const range = XLSX.utils.decode_range(ws['!ref'] || 'A1:A1');
+    for (let R = range.s.r; R <= range.e.r; ++R) {
+      for (let C = range.s.c; C <= range.e.c; ++C) {
+        const cellAddress = XLSX.utils.encode_cell({ r: R, c: C });
+        const cell = ws[cellAddress];
+        if (!cell) continue;
+
+        // Kolom 1 adalah NIK
+        if (C === 1 && R > 0) {
+          cell.t = 's';
+          cell.z = '@';
+        }
+      }
+    }
+
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, sheetName);
+    XLSX.writeFile(wb, filename);
+
+    toast.success(
+      'File Excel (.xlsx) Berhasil Diunduh',
+      `File ${filename} telah diunduh. Format rapi, NIK utuh 16 digit, dan kolom tidak terpotong.`
+    );
+  };
+
+  // =========================================================================
+  // EKSPOR FORMAT CSV STANDAR (.CSV) - FORMULA NIK AGAR AMAN DI EXCEL
+  // =========================================================================
+  const exportCSV = (type: 'balita' | 'bumil' | 'lansia') => {
+    const dateStamp = `${selectedYear}_${String(selectedMonth).padStart(2, '0')}`;
+    let dataset: { headers: string[]; rows: any[][]; colWidths: number[] };
+    let filename = '';
+
+    if (type === 'balita') {
+      dataset = getBalitaData();
+      filename = `Data_Balita_Antropometri_Posyandu_Melati_${dateStamp}.csv`;
+    } else if (type === 'bumil') {
+      dataset = getBumilData();
+      filename = `Data_Ibu_Hamil_KIA_Posyandu_Melati_${dateStamp}.csv`;
+    } else {
+      dataset = getLansiaData();
+      filename = `Data_Lansia_PTM_Posyandu_Melati_${dateStamp}.csv`;
+    }
+
+    // Escape sel CSV: jika NIK (16 digit angka), format sebagai formula ="..." agar saat dibuka di Excel tidak jadi 3.2E+15
+    const escapeCSVCell = (val: any, colIdx: number) => {
+      if (val === null || val === undefined) return '""';
+      const str = String(val).replace(/"/g, '""');
+
+      if (colIdx === 1 && /^\d{10,}$/.test(String(val))) {
+        return `="""${str}"""`;
+      }
+      return `"${str}"`;
+    };
+
+    let csvContent = dataset.headers.map((h) => `"${h.replace(/"/g, '""')}"`).join(',') + '\n';
+    dataset.rows.forEach((row) => {
+      csvContent += row.map((cell, colIdx) => escapeCSVCell(cell, colIdx)).join(',') + '\n';
+    });
+
     const blob = new Blob(['\uFEFF' + csvContent], { type: 'text/csv;charset=utf-8;' });
     const url = URL.createObjectURL(blob);
     const link = document.createElement('a');
@@ -277,21 +370,15 @@ export default function ExportReportModal({
     document.body.removeChild(link);
     URL.revokeObjectURL(url);
 
-    const typeLabels = {
-      balita: 'Data Balita & Antropometri',
-      bumil: 'Data Ibu Hamil & Antenatal',
-      lansia: 'Data Lansia & Skrining PTM',
-    };
-
     toast.success(
-      'Ekspor CSV Berhasil Diunduh',
-      `File ${typeLabels[type]} telah diunduh dengan rapi & kompatibel dengan Microsoft Excel.`
+      'File CSV Berhasil Diunduh',
+      `File ${filename} telah diunduh dengan proteksi formula NIK 16 digit.`
     );
   };
 
   return (
     <div className="no-print print:hidden fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm animate-in fade-in">
-      <div className="bg-white rounded-3xl shadow-2xl border border-slate-200 w-full max-w-xl overflow-hidden animate-in zoom-in-95 duration-150">
+      <div className="bg-white rounded-3xl shadow-2xl border border-slate-200 w-full max-w-2xl overflow-hidden animate-in zoom-in-95 duration-150">
         {/* Header Modal */}
         <div className="p-6 border-b border-[#fce1e4] flex items-center justify-between bg-gradient-to-r from-[#fff5f6] to-white">
           <div className="flex items-center gap-3.5">
@@ -301,14 +388,14 @@ export default function ExportReportModal({
             <div>
               <div className="flex items-center gap-2">
                 <h3 className="text-base font-extrabold text-slate-900">
-                  Ekspor Data CSV Posyandu
+                  Ekspor Data Posyandu Melati
                 </h3>
                 <span className="px-2 py-0.5 rounded-full bg-[#fce1e4] text-[#80000f] text-[10px] font-bold border border-[#f8c8c8]">
                   {currentMonthName} {selectedYear}
                 </span>
               </div>
               <p className="text-xs text-slate-500 mt-0.5">
-                Unduh rekapitulasi data kependudukan dan kesehatan dalam format file spreadsheet (CSV) kompatibel Microsoft Excel.
+                Pilih format <strong>Excel (.xlsx)</strong> untuk tampilan rapi otomatis di Microsoft Excel, atau <strong>CSV</strong> untuk integrasi sistem.
               </p>
             </div>
           </div>
@@ -322,104 +409,144 @@ export default function ExportReportModal({
           </button>
         </div>
 
-        {/* 3 Opsi Unduhan CSV Data */}
-        <div className="p-6 space-y-3.5 text-xs">
-
-          {/* Opsi 2: Data Balita & Antropometri KMS (CSV) */}
-          <div className="p-4 bg-slate-50 hover:bg-slate-50/80 border border-slate-200 rounded-2xl flex flex-col sm:flex-row sm:items-center justify-between gap-3 transition-colors">
-            <div className="space-y-1">
+        {/* 3 Opsi Unduhan Data */}
+        <div className="p-6 space-y-4 text-xs max-h-[70vh] overflow-y-auto">
+          {/* Card 1: Data Balita & Antropometri KMS */}
+          <div className="p-4 bg-slate-50 hover:bg-slate-50/80 border border-slate-200 rounded-2xl flex flex-col md:flex-row md:items-center justify-between gap-3.5 transition-colors">
+            <div className="space-y-1 flex-1">
               <div className="flex items-center gap-2">
-                <span className="w-6 h-6 rounded-lg bg-emerald-600 text-white flex items-center justify-center text-xs font-bold">
+                <span className="w-6 h-6 rounded-lg bg-emerald-600 text-white flex items-center justify-center text-xs font-bold shrink-0">
                   <Baby className="w-3.5 h-3.5" />
                 </span>
                 <h4 className="font-bold text-slate-900 text-sm">
-                  Data Balita &amp; Antropometri KMS (CSV)
+                  Data Balita &amp; Antropometri KMS
                 </h4>
                 <span className="px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800 text-[10px] font-bold">
                   {balitaList.length} Balita
                 </span>
               </div>
               <p className="text-slate-500 text-[11px] leading-relaxed pl-8">
-                Data master balita, NIK, orang tua, rekam penimbangan BB/TB, Z-Score WHO, status KMS (N/T/2T/BGM), dan vitamin A.
+                Master balita, NIK 16 digit, orang tua, hasil timbang BB/TB, Z-Score WHO, status KMS (N/T/2T/BGM), vitamin A, dan obat cacing.
               </p>
             </div>
-            <button
-              type="button"
-              onClick={() => exportCSV('balita')}
-              className="flex items-center justify-center gap-2 px-4 py-2 bg-slate-900 hover:bg-slate-800 text-white rounded-full font-bold shadow-sm transition-all hover:scale-102 shrink-0 cursor-pointer"
-            >
-              <Download className="w-3.5 h-3.5" />
-              <span>Ekspor CSV</span>
-            </button>
+
+            <div className="flex items-center gap-2 shrink-0 pl-8 md:pl-0">
+              <button
+                type="button"
+                onClick={() => exportExcel('balita')}
+                className="flex items-center justify-center gap-1.5 px-3.5 py-2 bg-emerald-700 hover:bg-emerald-800 text-white rounded-xl font-bold text-xs shadow-sm transition-all hover:scale-102 cursor-pointer"
+                title="Unduh format Microsoft Excel resmi dengan kolom rapi & NIK utuh"
+              >
+                <FileSpreadsheet className="w-3.5 h-3.5" />
+                <span>Unduh Excel (.xlsx)</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => exportCSV('balita')}
+                className="flex items-center justify-center gap-1.5 px-3 py-2 bg-white hover:bg-slate-100 text-slate-700 border border-slate-300 rounded-xl font-bold text-xs transition-colors cursor-pointer"
+                title="Unduh format teks CSV standar"
+              >
+                <Download className="w-3.5 h-3.5" />
+                <span>CSV</span>
+              </button>
+            </div>
           </div>
 
-          {/* Opsi 3: Data Ibu Hamil Maternal & LiLA (CSV) */}
-          <div className="p-4 bg-slate-50 hover:bg-slate-50/80 border border-slate-200 rounded-2xl flex flex-col sm:flex-row sm:items-center justify-between gap-3 transition-colors">
-            <div className="space-y-1">
+          {/* Card 2: Data Ibu Hamil Maternal & LiLA */}
+          <div className="p-4 bg-slate-50 hover:bg-slate-50/80 border border-slate-200 rounded-2xl flex flex-col md:flex-row md:items-center justify-between gap-3.5 transition-colors">
+            <div className="space-y-1 flex-1">
               <div className="flex items-center gap-2">
-                <span className="w-6 h-6 rounded-lg bg-pink-600 text-white flex items-center justify-center text-xs font-bold">
+                <span className="w-6 h-6 rounded-lg bg-pink-600 text-white flex items-center justify-center text-xs font-bold shrink-0">
                   <HeartPulse className="w-3.5 h-3.5" />
                 </span>
                 <h4 className="font-bold text-slate-900 text-sm">
-                  Data Ibu Hamil Maternal &amp; LiLA (CSV)
+                  Data Ibu Hamil Maternal &amp; LiLA
                 </h4>
                 <span className="px-2 py-0.5 rounded-full bg-pink-100 text-pink-800 text-[10px] font-bold">
                   {bumilList.length} Bumil
                 </span>
               </div>
               <p className="text-slate-500 text-[11px] leading-relaxed pl-8">
-                Data antenatal HPHT, HPL, usia gestasi, pengukuran LiLA, skrining KEK, kadar Hb anemia, dan buku KIA.
+                Data antenatal HPHT, HPL, usia gestasi, pengukuran LiLA, skrining risiko KEK, kadar Hb anemia, dan buku KIA.
               </p>
             </div>
-            <button
-              type="button"
-              onClick={() => exportCSV('bumil')}
-              className="flex items-center justify-center gap-2 px-4 py-2 bg-slate-900 hover:bg-slate-800 text-white rounded-full font-bold shadow-sm transition-all hover:scale-102 shrink-0 cursor-pointer"
-            >
-              <Download className="w-3.5 h-3.5" />
-              <span>Ekspor CSV</span>
-            </button>
+
+            <div className="flex items-center gap-2 shrink-0 pl-8 md:pl-0">
+              <button
+                type="button"
+                onClick={() => exportExcel('bumil')}
+                className="flex items-center justify-center gap-1.5 px-3.5 py-2 bg-emerald-700 hover:bg-emerald-800 text-white rounded-xl font-bold text-xs shadow-sm transition-all hover:scale-102 cursor-pointer"
+                title="Unduh format Microsoft Excel resmi dengan kolom rapi & NIK utuh"
+              >
+                <FileSpreadsheet className="w-3.5 h-3.5" />
+                <span>Unduh Excel (.xlsx)</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => exportCSV('bumil')}
+                className="flex items-center justify-center gap-1.5 px-3 py-2 bg-white hover:bg-slate-100 text-slate-700 border border-slate-300 rounded-xl font-bold text-xs transition-colors cursor-pointer"
+                title="Unduh format teks CSV standar"
+              >
+                <Download className="w-3.5 h-3.5" />
+                <span>CSV</span>
+              </button>
+            </div>
           </div>
 
-          {/* Opsi 4: Data Lansia & Skrining PTM (CSV) */}
-          <div className="p-4 bg-slate-50 hover:bg-slate-50/80 border border-slate-200 rounded-2xl flex flex-col sm:flex-row sm:items-center justify-between gap-3 transition-colors">
-            <div className="space-y-1">
+          {/* Card 3: Data Posyandu Lansia & Skrining PTM */}
+          <div className="p-4 bg-slate-50 hover:bg-slate-50/80 border border-slate-200 rounded-2xl flex flex-col md:flex-row md:items-center justify-between gap-3.5 transition-colors">
+            <div className="space-y-1 flex-1">
               <div className="flex items-center gap-2">
-                <span className="w-6 h-6 rounded-lg bg-blue-600 text-white flex items-center justify-center text-xs font-bold">
+                <span className="w-6 h-6 rounded-lg bg-blue-600 text-white flex items-center justify-center text-xs font-bold shrink-0">
                   <Users className="w-3.5 h-3.5" />
                 </span>
                 <h4 className="font-bold text-slate-900 text-sm">
-                  Data Posyandu Lansia &amp; Skrining PTM (CSV)
+                  Data Posyandu Lansia &amp; Skrining PTM
                 </h4>
                 <span className="px-2 py-0.5 rounded-full bg-blue-100 text-blue-800 text-[10px] font-bold">
                   {lansiaList.length} Lansia
                 </span>
               </div>
               <p className="text-slate-500 text-[11px] leading-relaxed pl-8">
-                Data kohort lansia, tensi darah hipertensi, gula darah, asam urat, kolesterol, dan edukasi gizi sehat.
+                Data lansia, tensi hipertensi, skrining gula darah, asam urat, kolesterol total, dan konseling gizi.
               </p>
             </div>
-            <button
-              type="button"
-              onClick={() => exportCSV('lansia')}
-              className="flex items-center justify-center gap-2 px-4 py-2 bg-slate-900 hover:bg-slate-800 text-white rounded-full font-bold shadow-sm transition-all hover:scale-102 shrink-0 cursor-pointer"
-            >
-              <Download className="w-3.5 h-3.5" />
-              <span>Ekspor CSV</span>
-            </button>
+
+            <div className="flex items-center gap-2 shrink-0 pl-8 md:pl-0">
+              <button
+                type="button"
+                onClick={() => exportExcel('lansia')}
+                className="flex items-center justify-center gap-1.5 px-3.5 py-2 bg-emerald-700 hover:bg-emerald-800 text-white rounded-xl font-bold text-xs shadow-sm transition-all hover:scale-102 cursor-pointer"
+                title="Unduh format Microsoft Excel resmi dengan kolom rapi & NIK utuh"
+              >
+                <FileSpreadsheet className="w-3.5 h-3.5" />
+                <span>Unduh Excel (.xlsx)</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => exportCSV('lansia')}
+                className="flex items-center justify-center gap-1.5 px-3 py-2 bg-white hover:bg-slate-100 text-slate-700 border border-slate-300 rounded-xl font-bold text-xs transition-colors cursor-pointer"
+                title="Unduh format teks CSV standar"
+              >
+                <Download className="w-3.5 h-3.5" />
+                <span>CSV</span>
+              </button>
+            </div>
           </div>
         </div>
 
-        {/* Footer Modal */}
-        <div className="p-4 border-t border-slate-200 bg-slate-50 flex items-center justify-between">
-          <div className="flex items-center gap-1.5 text-[11px] text-slate-500 font-medium">
-            <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
-            <span>Format CSV kompatibel dengan Microsoft Excel &amp; Google Sheets</span>
+        {/* Footer Modal dengan Tips Nyata */}
+        <div className="p-4 border-t border-slate-200 bg-slate-50 flex flex-col sm:flex-row items-center justify-between gap-3">
+          <div className="flex items-center gap-2 text-[11px] text-emerald-800 font-medium">
+            <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
+            <span>
+              Format <strong>Excel (.xlsx)</strong> otomatis mengatur lebar kolom &amp; menjaga NIK 16-digit agar tidak berubah menjadi <em>3.2E+15</em>.
+            </span>
           </div>
           <button
             type="button"
             onClick={onClose}
-            className="px-5 py-2 rounded-full bg-white hover:bg-slate-100 border border-slate-300 text-slate-700 font-bold text-xs transition-colors cursor-pointer"
+            className="px-5 py-2 rounded-full bg-white hover:bg-slate-100 border border-slate-300 text-slate-700 font-bold text-xs transition-colors cursor-pointer shrink-0"
           >
             Tutup
           </button>

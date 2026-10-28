@@ -79,17 +79,17 @@ export default function LaporanPage() {
   const countBumilKEK = bumilList.filter((b) => b.statusKEK || b.lilaSaatIni < 23.5).length;
 
   return (
-    <div className="flex min-h-screen bg-[#f8fafc]">
-      <div className="no-print">
+    <div className="flex min-h-screen bg-[#f8fafc] print:bg-white print:min-h-0 print:block">
+      <div className="no-print print:hidden">
         <Sidebar />
       </div>
 
-      <div className="flex-1 flex flex-col min-w-0">
-        <div className="no-print">
+      <div className="flex-1 flex flex-col min-w-0 print:w-full print:block">
+        <div className="no-print print:hidden">
           <Header currentRole={currentRole} onRoleChange={setCurrentRole} />
         </div>
 
-        <main className="p-4 sm:p-6 lg:p-8 space-y-6 flex-1 overflow-y-auto max-w-[1600px] mx-auto w-full">
+        <main className="p-4 sm:p-6 lg:p-8 space-y-6 flex-1 overflow-y-auto max-w-[1600px] mx-auto w-full print:p-0 print:m-0 print:max-w-none print:w-full print:space-y-0 print:overflow-visible">
           {currentRole === 'kader' ? (
             <div className="p-8 sm:p-12 rounded-3xl bg-white border-2 border-[#fce1e4] shadow-sm text-center max-w-xl mx-auto my-12 space-y-5">
               <div className="w-16 h-16 rounded-2xl bg-[#fff5f6] border border-[#fce1e4] text-[#80000f] flex items-center justify-center mx-auto shadow-xs">
@@ -119,7 +119,7 @@ export default function LaporanPage() {
           ) : (
             <>
               {/* Action Header - Disembunyikan saat cetak */}
-              <div className="no-print space-y-4">
+              <div className="no-print print:hidden space-y-4">
                 <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                   <div>
                     <div className="flex items-center gap-2.5">
@@ -143,7 +143,7 @@ export default function LaporanPage() {
                       className="flex items-center gap-2 px-5 py-2.5 rounded-full bg-white hover:bg-[#fff5f6] text-slate-800 hover:text-[#80000f] font-bold text-xs border border-[#fce1e4] shadow-2xs transition-all cursor-pointer"
                     >
                       <Download className="w-3.5 h-3.5 text-[#80000f]" />
-                      <span>Ekspor CSV</span>
+                      <span>Ekspor Excel / CSV</span>
                     </button>
                     <button
                       onClick={handlePrint}
@@ -156,8 +156,8 @@ export default function LaporanPage() {
                 </div>
               </div>
 
-            {/* Filter Bar Periode Laporan Bulanan */}
-            <div className="p-4 bg-white rounded-2xl border border-slate-200 shadow-2xs flex flex-col md:flex-row md:items-center justify-between gap-4">
+            {/* Filter Bar Periode Laporan Bulanan - Disembunyikan saat cetak */}
+            <div className="no-print print:hidden p-4 bg-white rounded-2xl border border-slate-200 shadow-2xs flex flex-col md:flex-row md:items-center justify-between gap-4">
               <div className="flex items-center gap-3">
                 <div className="w-8 h-8 rounded-xl bg-slate-100 flex items-center justify-center text-slate-700">
                   <Calendar className="w-4 h-4" />
