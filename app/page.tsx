@@ -258,7 +258,7 @@ export default function LandingPage() {
           <img
             src="/images/hero_posyandu.jpg"
             alt="Kehangatan Pelayanan Posyandu Melati"
-            className="w-full h-full object-cover object-center lg:object-[center_right]"
+            className="w-full h-full object-cover object-center"
           />
           {/* Smooth Gradient Overlay: Fades from solid white into transparent on the right */}
           <div className="absolute inset-0 bg-gradient-to-r from-white via-white/85 sm:via-white/70 to-transparent hidden sm:block" />
