@@ -113,7 +113,7 @@ export default function LandingPage() {
   const serviceCards = [
     {
       id: 1,
-      image: '/images/dok_timbang_balita.jpg',
+      image: '/images/deteksi_stunting_balita.jpg',
       category: 'Usia 0 - 59 Bulan',
       title: 'Pemantauan Balita & KMS WHO',
       subtitle: 'Pediatri & Pertumbuhan Anak',
@@ -352,8 +352,8 @@ export default function LandingPage() {
           {/* Left: 50% Full-bleed Image (Touches left screen edge, 0 margin) */}
           <div className="w-full h-[360px] sm:h-[440px] lg:h-auto min-h-[420px] lg:min-h-[520px] relative">
             <img
-              src="/images/dok_timbang_balita.jpg"
-              alt="Pemantauan Balita di Posyandu Melati"
+              src="/images/mitra_posyandu.jpg"
+              alt="Pemberian Vitamin A di Posyandu Melati"
               className="w-full h-full object-cover object-center"
             />
           </div>
@@ -466,7 +466,7 @@ export default function LandingPage() {
           {/* Right: 50% Full-bleed Image (Touches right screen edge, 0 margin) */}
           <div className="w-full h-[360px] sm:h-[440px] lg:h-auto min-h-[420px] lg:min-h-[520px] relative order-1 lg:order-2">
             <img
-              src="/images/dok_bumil_checkup.jpg"
+              src="/images/konseling_pilihan_tepat.jpg"
               alt="Konseling Personal di Posyandu Melati"
               className="w-full h-full object-cover object-center"
             />

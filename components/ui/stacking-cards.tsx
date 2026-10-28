@@ -32,7 +32,7 @@ export const defaultServicesData: ServiceStackItem[] = [
     ],
     schedule: "Setiap Tanggal 15 (08.30 - 12.00 WIB)",
     lead: "Bdn. Siti Rahma, S.Tr.Keb & Tim Kader",
-    image: "/images/dok_timbang_balita.jpg",
+    image: "/images/deteksi_stunting_balita.jpg",
     themeGradient: "from-white via-[#fff7f8] to-[#ffedf0]",
   },
   {
