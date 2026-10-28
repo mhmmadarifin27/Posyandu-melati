@@ -350,20 +350,15 @@ export default function LandingPage() {
       <section className="py-16 sm:py-20 lg:py-24 bg-[#fffafb] border-y border-rose-100 overflow-hidden">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-10 lg:gap-14 items-center">
-            {/* Left: Framed, Proportionate Image Container (5 cols on lg) */}
-            <div className="lg:col-span-5 relative">
-              <div className="relative rounded-3xl overflow-hidden shadow-xl shadow-rose-950/5 border border-rose-100/90 aspect-[4/3] sm:aspect-[16/11] lg:aspect-[4/3] max-h-[440px] w-full bg-rose-50">
+            {/* Left: Framed, Firm Image Container (5 cols on lg) */}
+            <div className="lg:col-span-5 w-full">
+              <div className="relative rounded-2xl overflow-hidden shadow-lg shadow-rose-950/10 border-2 border-rose-200/90 aspect-[3/2] sm:aspect-[16/10] lg:aspect-[3/2] max-h-[420px] w-full bg-rose-50">
                 <img
-                  src="/images/mitra_posyandu_hd.jpg"
-                  alt="Pelayanan Posyandu Melati Bersama Bidan dan Kader"
-                  className="w-full h-full object-cover object-center transform transition duration-500 hover:scale-103"
+                  src="/images/mitra_posyandu.jpg"
+                  alt="Pemberian Vitamin A di Posyandu Melati"
+                  className="w-full h-full object-cover object-center transform transition duration-500 hover:scale-102"
                   loading="lazy"
                 />
-              </div>
-              {/* Decorative Subtle Badge */}
-              <div className="absolute -bottom-3 right-4 sm:right-6 bg-white/95 backdrop-blur-md px-3.5 py-2 rounded-2xl shadow-md border border-rose-100 flex items-center gap-2">
-                <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse shrink-0" />
-                <span className="text-xs font-bold text-slate-800">Mitra Terpercaya RW 03</span>
               </div>
             </div>
 
@@ -482,20 +477,15 @@ export default function LandingPage() {
               </div>
             </div>
 
-            {/* Right: Framed, Proportionate Image Container (5 cols on lg) */}
-            <div className="lg:col-span-5 relative order-1 lg:order-2">
-              <div className="relative rounded-3xl overflow-hidden shadow-xl shadow-rose-950/5 border border-rose-100/90 aspect-[4/3] sm:aspect-[16/11] lg:aspect-[4/3] max-h-[440px] w-full bg-rose-50">
+            {/* Right: Framed, Firm Image Container (5 cols on lg) */}
+            <div className="lg:col-span-5 w-full order-1 lg:order-2">
+              <div className="relative rounded-2xl overflow-hidden shadow-lg shadow-rose-950/10 border-2 border-rose-200/90 aspect-[4/3] max-h-[420px] w-full bg-rose-50">
                 <img
-                  src="/images/konseling_pilihan_tepat_hd.jpg"
+                  src="/images/konseling_pilihan_tepat.jpg"
                   alt="Konseling Personal Keluarga di Posyandu Melati"
-                  className="w-full h-full object-cover object-center transform transition duration-500 hover:scale-103"
+                  className="w-full h-full object-cover object-center transform transition duration-500 hover:scale-102"
                   loading="lazy"
                 />
-              </div>
-              {/* Decorative Subtle Badge */}
-              <div className="absolute -bottom-3 left-4 sm:left-6 bg-white/95 backdrop-blur-md px-3.5 py-2 rounded-2xl shadow-md border border-rose-100 flex items-center gap-2">
-                <span className="w-2.5 h-2.5 rounded-full bg-rose-500 animate-pulse shrink-0" />
-                <span className="text-xs font-bold text-slate-800">Konsultasi KIA &amp; KMS WHO</span>
               </div>
             </div>
           </div>
