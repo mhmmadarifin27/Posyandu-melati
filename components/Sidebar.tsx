@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { AnimatePresence, motion } from 'framer-motion';
@@ -28,6 +28,7 @@ import {
   LogOut,
   X,
   ChevronRight,
+  ChevronUp,
 } from 'lucide-react';
 import { toast } from '@/components/ui/custom-toast';
 
@@ -59,6 +60,62 @@ export default function Sidebar({ className = '' }: SidebarProps) {
     }
     return 'kader';
   });
+
+  // Profile & Popover State
+  const [profileName, setProfileName] = useState('');
+  const [profileJabatan, setProfileJabatan] = useState('');
+  const [showProfileMenu, setShowProfileMenu] = useState(false);
+  const desktopFooterRef = useRef<HTMLDivElement>(null);
+
+  // Synchronize profile data and listen to updates
+  useEffect(() => {
+    const syncProfile = () => {
+      if (typeof window !== 'undefined') {
+        let profiles: Record<string, any> = {};
+        try {
+          profiles = JSON.parse(localStorage.getItem('posyandu_profiles') || '{}');
+        } catch {}
+
+        let authUser: any = null;
+        try {
+          authUser = JSON.parse(localStorage.getItem('posyandu_auth_user') || '{}');
+        } catch {}
+
+        const current = activeRole === 'bidan' ? profiles.bidan : profiles.kader;
+        const nameVal =
+          current?.nama ||
+          authUser?.nama ||
+          (activeRole === 'bidan' ? 'Bdn. Siti Rahma, S.Tr.Keb' : 'Ny. Anisa Rahmawati');
+        const jabatanVal =
+          current?.jabatan ||
+          authUser?.jabatan ||
+          (activeRole === 'bidan' ? 'Bidan Pembina Wilayah RW 03' : 'Ketua Kader Posyandu Melati');
+        setProfileName(nameVal);
+        setProfileJabatan(jabatanVal);
+      }
+    };
+
+    syncProfile();
+
+    const handleClickOutside = (e: MouseEvent) => {
+      if (
+        desktopFooterRef.current &&
+        !desktopFooterRef.current.contains(e.target as Node)
+      ) {
+        setShowProfileMenu(false);
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    window.addEventListener('posyandu_profile_updated', syncProfile);
+    window.addEventListener('storage', syncProfile);
+
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+      window.removeEventListener('posyandu_profile_updated', syncProfile);
+      window.removeEventListener('storage', syncProfile);
+    };
+  }, [activeRole]);
 
   // Synchronize collapsed state & active role with localStorage
   useEffect(() => {
@@ -365,52 +422,123 @@ export default function Sidebar({ className = '' }: SidebarProps) {
           </SidebarNav>
 
           {/* Profile & Logout Footer */}
-          <SidebarFooter className={`border-t border-[#fce1e4] bg-white ${collapsed ? 'p-2 flex flex-col items-center gap-2' : 'p-3 space-y-2.5'}`}>
+          <SidebarFooter ref={desktopFooterRef} className="border-t border-[#fce1e4] bg-white p-2 relative">
             {collapsed ? (
-              <div className="flex flex-col items-center gap-2 w-full">
-                <div
-                  className="h-8 w-8 rounded-xl bg-[#80000f] text-white font-black text-xs flex items-center justify-center shrink-0 shadow-sm shadow-[#80000f]/25"
-                  title={activeRole === 'bidan' ? 'Bdn. Ratna (Bidan Desa)' : 'Kader Posyandu RW 03'}
-                >
-                  {activeRole === 'bidan' ? '👩‍⚕️' : '🧕'}
-                </div>
+              <div className="flex flex-col items-center gap-2 w-full relative">
                 <button
                   type="button"
-                  onClick={handleLogout}
-                  className="w-9 h-9 flex items-center justify-center rounded-xl text-[#80000f] hover:text-white bg-white hover:bg-[#80000f] transition-all border border-[#fce1e4] hover:border-[#80000f] shadow-2xs group cursor-pointer shrink-0"
-                  title="Keluar / Logout dari Dashboard"
+                  onClick={() => setShowProfileMenu(!showProfileMenu)}
+                  className="h-9 w-9 rounded-xl bg-[#80000f] text-white font-black text-xs flex items-center justify-center shrink-0 shadow-sm shadow-[#80000f]/25 cursor-pointer hover:scale-105 transition-transform"
+                  title="Klik untuk membuka menu akun & logout"
                 >
-                  <LogOut className="w-3.5 h-3.5 shrink-0 transition-transform group-hover:-translate-x-0.5" />
+                  {activeRole === 'bidan' ? '👩‍⚕️' : '🧕'}
                 </button>
+
+                {/* Flyout Popover untuk Collapsed Sidebar */}
+                {showProfileMenu && (
+                  <div className="absolute left-[calc(100%+12px)] bottom-0 w-52 bg-white rounded-2xl border border-[#fce1e4] shadow-2xl p-2.5 z-50 animate-in fade-in zoom-in-95 space-y-1">
+                    <div className="px-2.5 py-1.5 border-b border-[#fce1e4]/70 mb-1">
+                      <p className="text-[10px] font-extrabold uppercase tracking-wider text-[#80000f]">
+                        {activeRole === 'bidan' ? 'Bidan Desa' : 'Kader Posyandu'}
+                      </p>
+                      <p className="text-xs font-bold text-slate-900 truncate">
+                        {profileName}
+                      </p>
+                      <p className="text-[10px] text-slate-500 truncate">
+                        {profileJabatan}
+                      </p>
+                    </div>
+
+                    <Link
+                      href="/pengaturan-akun"
+                      onClick={() => setShowProfileMenu(false)}
+                      className="flex items-center gap-2 w-full px-2.5 py-2 rounded-xl text-xs font-bold text-slate-700 hover:bg-[#fff5f6] hover:text-[#80000f] transition-colors"
+                    >
+                      <KeyRound className="w-3.5 h-3.5 text-[#80000f]" />
+                      <span>Pengaturan Akun</span>
+                    </Link>
+
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setShowProfileMenu(false);
+                        handleLogout();
+                      }}
+                      className="flex items-center gap-2 w-full px-2.5 py-2 rounded-xl text-xs font-bold text-[#80000f] hover:bg-[#80000f] hover:text-white transition-colors cursor-pointer"
+                    >
+                      <LogOut className="w-3.5 h-3.5" />
+                      <span>Keluar / Logout</span>
+                    </button>
+                  </div>
+                )}
               </div>
             ) : (
-              <>
-                <div className="w-full flex items-center justify-between overflow-hidden">
+              <div className="relative w-full">
+                {/* Popover Menu saat Profil Diklik */}
+                {showProfileMenu && (
+                  <div className="absolute bottom-[calc(100%+8px)] left-0 right-0 bg-white rounded-2xl border border-[#fce1e4] shadow-2xl p-2 z-50 animate-in fade-in zoom-in-95 space-y-1">
+                    <div className="px-3 py-2 border-b border-[#fce1e4]/70 mb-1">
+                      <p className="text-[10px] font-extrabold uppercase tracking-wider text-[#80000f]">
+                        {activeRole === 'bidan' ? 'Akun Bidan Desa' : 'Akun Kader Posyandu'}
+                      </p>
+                      <p className="text-xs font-bold text-slate-900 truncate">
+                        {profileName}
+                      </p>
+                      <p className="text-[10px] text-slate-500 truncate">
+                        {profileJabatan}
+                      </p>
+                    </div>
+
+                    <Link
+                      href="/pengaturan-akun"
+                      onClick={() => setShowProfileMenu(false)}
+                      className="flex items-center gap-2.5 w-full px-3 py-2 rounded-xl text-xs font-bold text-slate-700 hover:bg-[#fff5f6] hover:text-[#80000f] transition-colors"
+                    >
+                      <KeyRound className="w-3.5 h-3.5 text-[#80000f]" />
+                      <span>Pengaturan Akun</span>
+                    </Link>
+
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setShowProfileMenu(false);
+                        handleLogout();
+                      }}
+                      className="flex items-center gap-2.5 w-full px-3 py-2 rounded-xl text-xs font-bold text-[#80000f] hover:bg-[#80000f] hover:text-white transition-colors cursor-pointer"
+                    >
+                      <LogOut className="w-3.5 h-3.5" />
+                      <span>Keluar / Logout</span>
+                    </button>
+                  </div>
+                )}
+
+                {/* Tombol Profil Interaktif yang Dapat Diklik */}
+                <button
+                  type="button"
+                  onClick={() => setShowProfileMenu(!showProfileMenu)}
+                  className="w-full flex items-center justify-between p-2 rounded-xl hover:bg-[#fff5f6] transition-colors cursor-pointer text-left group"
+                  title="Klik untuk membuka menu profil & logout"
+                >
                   <div className="flex items-center gap-2.5 overflow-hidden">
                     <div className="h-8 w-8 rounded-xl bg-[#80000f] text-white font-black text-xs flex items-center justify-center shrink-0 shadow-sm shadow-[#80000f]/25">
                       {activeRole === 'bidan' ? '👩‍⚕️' : '🧕'}
                     </div>
                     <div className="overflow-hidden">
-                      <p className="text-xs font-bold text-slate-900 truncate">
-                        {activeRole === 'bidan' ? 'Bdn. Ratna (Bidan Desa)' : 'Kader Posyandu RW 03'}
+                      <p className="text-xs font-bold text-slate-900 truncate group-hover:text-[#80000f] transition-colors">
+                        {profileName}
                       </p>
                       <p className="text-[10px] text-slate-500 font-medium truncate">
-                        {activeRole === 'bidan' ? 'Supervisi & Penanggung Jawab' : 'Pelaksana Meja 1–4'}
+                        {profileJabatan}
                       </p>
                     </div>
                   </div>
-                </div>
-
-                <button
-                  type="button"
-                  onClick={handleLogout}
-                  className="w-full flex items-center justify-center gap-2 px-3 py-2.5 rounded-xl text-xs font-bold text-[#80000f] hover:text-white bg-white hover:bg-[#80000f] transition-all border border-[#fce1e4] hover:border-[#80000f] shadow-2xs group cursor-pointer"
-                  title="Keluar / Logout dari Dashboard"
-                >
-                  <LogOut className="w-3.5 h-3.5 shrink-0 transition-transform group-hover:-translate-x-0.5" />
-                  <span>Keluar / Logout</span>
+                  <ChevronUp
+                    className={`w-3.5 h-3.5 text-slate-400 group-hover:text-[#80000f] transition-transform ${
+                      showProfileMenu ? 'rotate-180' : ''
+                    }`}
+                  />
                 </button>
-              </>
+              </div>
             )}
           </SidebarFooter>
         </BaseSidebar>
@@ -606,31 +734,55 @@ export default function Sidebar({ className = '' }: SidebarProps) {
 
               {/* Mobile Footer */}
               <div className="p-4 border-t border-[#fce1e4] bg-[#fffafb] space-y-3">
-                <div className="flex items-center gap-3">
-                  <div className="w-8 h-8 rounded-xl bg-[#80000f] text-white flex items-center justify-center font-bold text-xs shrink-0 shadow-xs">
-                    {activeRole === 'bidan' ? '👩‍⚕️' : '🧕'}
-                  </div>
-                  <div>
-                    <p className="text-xs font-bold text-slate-900">
-                      {activeRole === 'bidan' ? 'Bdn. Ratna (Bidan Desa)' : 'Kader Posyandu Melati'}
-                    </p>
-                    <p className="text-[10px] text-slate-500 font-medium">
-                      {activeRole === 'bidan' ? 'Supervisi Medis RW 03' : 'Pelaksana Meja 1–4'}
-                    </p>
-                  </div>
-                </div>
-
                 <button
                   type="button"
-                  onClick={() => {
-                    setMobileOpen(false);
-                    handleLogout();
-                  }}
-                  className="w-full flex items-center justify-center gap-2 px-3 py-2.5 rounded-xl text-xs font-bold text-[#80000f] hover:text-white bg-white hover:bg-[#80000f] transition-all border border-[#fce1e4] hover:border-[#80000f] shadow-2xs cursor-pointer"
+                  onClick={() => setShowProfileMenu(!showProfileMenu)}
+                  className="w-full flex items-center justify-between p-2 rounded-xl hover:bg-white transition-colors text-left"
                 >
-                  <LogOut className="w-4 h-4" />
-                  <span>Keluar / Logout</span>
+                  <div className="flex items-center gap-3">
+                    <div className="w-8 h-8 rounded-xl bg-[#80000f] text-white flex items-center justify-center font-bold text-xs shrink-0 shadow-xs">
+                      {activeRole === 'bidan' ? '👩‍⚕️' : '🧕'}
+                    </div>
+                    <div>
+                      <p className="text-xs font-bold text-slate-900">
+                        {profileName}
+                      </p>
+                      <p className="text-[10px] text-slate-500 font-medium">
+                        {profileJabatan}
+                      </p>
+                    </div>
+                  </div>
+                  <ChevronUp
+                    className={`w-4 h-4 text-slate-400 transition-transform ${
+                      showProfileMenu ? 'rotate-180' : ''
+                    }`}
+                  />
                 </button>
+
+                {showProfileMenu && (
+                  <div className="space-y-1.5 pt-1 animate-in fade-in">
+                    <Link
+                      href="/pengaturan-akun"
+                      onClick={() => setMobileOpen(false)}
+                      className="w-full flex items-center justify-center gap-2 px-3 py-2 rounded-xl text-xs font-bold text-slate-700 bg-white border border-[#fce1e4] shadow-2xs"
+                    >
+                      <KeyRound className="w-3.5 h-3.5 text-[#80000f]" />
+                      <span>Pengaturan Akun</span>
+                    </Link>
+
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setMobileOpen(false);
+                        handleLogout();
+                      }}
+                      className="w-full flex items-center justify-center gap-2 px-3 py-2.5 rounded-xl text-xs font-bold text-[#80000f] hover:text-white bg-white hover:bg-[#80000f] transition-all border border-[#fce1e4] hover:border-[#80000f] shadow-2xs cursor-pointer"
+                    >
+                      <LogOut className="w-3.5 h-3.5" />
+                      <span>Keluar / Logout</span>
+                    </button>
+                  </div>
+                )}
               </div>
             </motion.div>
           </div>

@@ -52,6 +52,11 @@ export default function LandingPage() {
   // Koleksi Foto Dokumentasi Kegiatan & Jadwal (Default SSR aman untuk mencegah Hydration Mismatch)
   const [galleryImages, setGalleryImages] = useState(DEFAULT_GALLERY_PHOTOS);
   const [scheduleConfig, setScheduleConfig] = useState<PosyanduScheduleConfig>(DEFAULT_SCHEDULE_CONFIG);
+  const [kaderContact, setKaderContact] = useState({
+    nama: 'Ny. Anisa Rahmawati',
+    noHp: '6281367895678',
+    jabatan: 'Ketua Kader Posyandu Melati',
+  });
 
   const [scrollY, setScrollY] = useState(0);
   const [scrollDirection, setScrollDirection] = useState<'up' | 'down'>('up');
@@ -79,14 +84,27 @@ export default function LandingPage() {
     setGalleryImages(LandingStore.getGalleryImages());
     setScheduleConfig(LandingStore.getSchedule());
 
+    const loadKader = () => {
+      if (typeof window !== 'undefined') {
+        try {
+          const raw = localStorage.getItem('posyandu_kader_contact');
+          if (raw) setKaderContact(JSON.parse(raw));
+        } catch {}
+      }
+    };
+    loadKader();
+
     const handleUpdate = () => {
       setGalleryImages(LandingStore.getGalleryImages());
       setScheduleConfig(LandingStore.getSchedule());
+      loadKader();
     };
     window.addEventListener('posyandu_landing_updated', handleUpdate);
+    window.addEventListener('posyandu_profile_updated', handleUpdate);
     window.addEventListener('storage', handleUpdate);
     return () => {
       window.removeEventListener('posyandu_landing_updated', handleUpdate);
+      window.removeEventListener('posyandu_profile_updated', handleUpdate);
       window.removeEventListener('storage', handleUpdate);
     };
   }, []);
@@ -541,12 +559,16 @@ export default function LandingPage() {
                   <div className="flex items-center gap-3">
                     <span className="text-xl">🌸</span>
                     <div>
-                      <div className="font-bold text-xs text-slate-900">Ibu Hj. Aminah</div>
-                      <div className="text-[11px] text-pink-700">Ketua Kader Posyandu Melati</div>
+                      <div className="font-bold text-xs text-slate-900" suppressHydrationWarning>
+                        {kaderContact.nama || 'Ny. Anisa Rahmawati'}
+                      </div>
+                      <div className="text-[11px] text-pink-700" suppressHydrationWarning>
+                        {kaderContact.jabatan || 'Ketua Kader Posyandu Melati'}
+                      </div>
                     </div>
                   </div>
                   <a
-                    href="https://wa.me/6281367895678?text=Halo%20Ibu%20Aminah,%20saya%20ingin%20bertanya%20seputar%20posyandu"
+                    href={`https://wa.me/${kaderContact.noHp || '6281367895678'}?text=Halo%20${encodeURIComponent(kaderContact.nama || 'Ibu Kader')},%20saya%20ingin%20bertanya%20seputar%20posyandu`}
                     target="_blank"
                     rel="noopener noreferrer"
                     className="px-4 py-1.5 rounded-full bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold shadow-2xs transition-colors"
