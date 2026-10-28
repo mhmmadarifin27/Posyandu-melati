@@ -330,38 +330,6 @@ export default function DashboardPage() {
                   <option value={2027}>2027</option>
                 </select>
               </div>
-
-              {/* Quick Switcher Chips */}
-              <div className="flex items-center gap-1.5 pl-2 border-l border-[#fce1e4]">
-                <button
-                  type="button"
-                  onClick={() => {
-                    setSelectedMonth(10);
-                    setSelectedYear(2026);
-                  }}
-                  className={`px-3 py-1 rounded-full text-[11px] font-bold transition-colors cursor-pointer ${
-                    selectedMonth === 10 && selectedYear === 2026
-                      ? 'bg-[#80000f] text-white shadow-2xs'
-                      : 'bg-[#fff5f6] text-[#80000f] hover:bg-[#fce1e4]'
-                  }`}
-                >
-                  Okt 2026 (Ada Data)
-                </button>
-                <button
-                  type="button"
-                  onClick={() => {
-                    setSelectedMonth(11);
-                    setSelectedYear(2026);
-                  }}
-                  className={`px-3 py-1 rounded-full text-[11px] font-bold transition-colors cursor-pointer ${
-                    selectedMonth === 11 && selectedYear === 2026
-                      ? 'bg-[#80000f] text-white shadow-2xs'
-                      : 'bg-[#fff5f6] text-[#80000f] hover:bg-[#fce1e4]'
-                  }`}
-                >
-                  Nov 2026 (Bulan Depan / 0)
-                </button>
-              </div>
             </div>
           </div>
 

@@ -45,37 +45,43 @@ export default function PosyanduCalendar() {
     };
   }, []);
 
-  const months: MonthData[] = [
-    {
-      name: scheduleConfig.sessionMonth || 'Oktober',
-      year: scheduleConfig.sessionYear || 2026,
-      daysInMonth: 31,
-      startDayOffset: 3, // 1 Okt 2026 = Kamis
-      sessionDate: scheduleConfig.sessionDate || 15,
-      sessionDayName: scheduleConfig.sessionDayName || 'Kamis',
-    },
-    {
-      name: 'November',
-      year: 2026,
-      daysInMonth: 30,
-      startDayOffset: 6, // 1 Nov 2026 = Minggu
-      sessionDate: scheduleConfig.sessionDate || 15,
-      sessionDayName: 'Minggu',
-    },
-    {
-      name: 'Desember',
-      year: 2026,
-      daysInMonth: 31,
-      startDayOffset: 1, // 1 Des 2026 = Selasa
-      sessionDate: scheduleConfig.sessionDate || 15,
-      sessionDayName: 'Selasa',
-    },
+  const ALL_MONTHS = [
+    'Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni',
+    'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'
   ];
+  const HARI_NAMES = ['Minggu', 'Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu'];
+
+  // Bangun 3 bulan berurutan secara dinamis mulai dari bulan jadwal aktif
+  const baseMonthIndex = Math.max(0, ALL_MONTHS.indexOf(scheduleConfig.sessionMonth || 'Oktober'));
+  const baseYear = scheduleConfig.sessionYear || 2026;
+
+  const months: MonthData[] = [0, 1, 2].map((offset) => {
+    const targetDate = new Date(baseYear, baseMonthIndex + offset, 1);
+    const mYear = targetDate.getFullYear();
+    const mMonthIdx = targetDate.getMonth();
+    const mName = ALL_MONTHS[mMonthIdx];
+    const daysInMonth = new Date(mYear, mMonthIdx + 1, 0).getDate();
+    const startDayOffset = (targetDate.getDay() + 6) % 7; // Senin = 0, Minggu = 6
+    const sDate = Math.min(scheduleConfig.sessionDate || 15, daysInMonth);
+    const sessionDayDate = new Date(mYear, mMonthIdx, sDate);
+    const sDayName = offset === 0 && scheduleConfig.sessionDayName
+      ? scheduleConfig.sessionDayName
+      : HARI_NAMES[sessionDayDate.getDay()];
+
+    return {
+      name: mName,
+      year: mYear,
+      daysInMonth,
+      startDayOffset,
+      sessionDate: sDate,
+      sessionDayName: sDayName,
+    };
+  });
 
   const [currentMonthIndex, setCurrentMonthIndex] = useState(0);
   const [selectedDay, setSelectedDay] = useState(DEFAULT_SCHEDULE_CONFIG.sessionDate);
 
-  const currentMonth = months[currentMonthIndex];
+  const currentMonth = months[currentMonthIndex] || months[0];
   const daysOfWeek = ['Sen', 'Sel', 'Rab', 'Kam', 'Jum', 'Sab', 'Min'];
 
   const totalDays = currentMonth.daysInMonth;
@@ -84,12 +90,12 @@ export default function PosyanduCalendar() {
 
   const handlePrevMonth = () => {
     setCurrentMonthIndex((prev) => (prev === 0 ? months.length - 1 : prev - 1));
-    setSelectedDay(15);
+    setSelectedDay(currentMonth.sessionDate);
   };
 
   const handleNextMonth = () => {
     setCurrentMonthIndex((prev) => (prev === months.length - 1 ? 0 : prev + 1));
-    setSelectedDay(15);
+    setSelectedDay(currentMonth.sessionDate);
   };
 
   return (
@@ -190,7 +196,7 @@ export default function PosyanduCalendar() {
               <div className="flex items-center gap-2">
                 <span className="w-3 h-3 rounded-full bg-rose-500 ring-2 ring-rose-200" />
                 <span className="text-slate-600 font-medium text-[11px]">
-                  Hari Posyandu Serentak (Tgl 15)
+                  Hari Posyandu Serentak (Tgl {currentMonth.sessionDate})
                 </span>
               </div>
               {selectedDay !== currentMonth.sessionDate && (
@@ -322,7 +328,7 @@ export default function PosyanduCalendar() {
               {/* Footer info within the card */}
               <div className="pt-3 border-t border-rose-100/80 flex flex-wrap items-center justify-between gap-2 text-xs text-slate-600 font-medium">
                 <span>
-                  Penanggung Jawab: <strong>Bdn. Siti Rahma, S.Tr.Keb &amp; Tim Kader</strong>
+                  Penanggung Jawab: <strong>{scheduleConfig.contactPersonName || 'Bdn. Siti Rahma, S.Tr.Keb'} &amp; Tim Kader</strong>
                 </span>
                 <span className="text-rose-700 font-bold flex items-center gap-1">
                   <CheckCircle2 className="w-3.5 h-3.5" />

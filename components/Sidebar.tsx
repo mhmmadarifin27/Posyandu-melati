@@ -24,6 +24,7 @@ import {
   FileSpreadsheet,
   Calendar,
   Image as ImageIcon,
+  KeyRound,
   LogOut,
   X,
   ChevronRight,
@@ -174,14 +175,17 @@ export default function Sidebar({ className = '' }: SidebarProps) {
 
   const landingNav = [
     {
-      name: 'Kelola Galeri',
-      href: '/kelola-galeri',
-      icon: <ImageIcon className="w-4 h-4 shrink-0" />,
+      name: 'Kelola Landing Page',
+      href: '/kelola-landing',
+      icon: <PanelsTopLeft className="w-4 h-4 shrink-0" />,
     },
+  ];
+
+  const accountNav = [
     {
-      name: 'Kelola Jadwal Posyandu',
-      href: '/kelola-jadwal',
-      icon: <Calendar className="w-4 h-4 shrink-0" />,
+      name: 'Pengaturan Akun',
+      href: '/pengaturan-akun',
+      icon: <KeyRound className="w-4 h-4 shrink-0" />,
     },
   ];
 
@@ -316,7 +320,8 @@ export default function Sidebar({ className = '' }: SidebarProps) {
                 {landingNav.map((item) => {
                   const isActive =
                     pathname === item.href ||
-                    (item.href === '/kelola-galeri' && pathname === '/kelola-landing');
+                    pathname === '/kelola-jadwal' ||
+                    pathname === '/kelola-galeri';
                   return (
                     <SidebarItem
                       key={item.href}
@@ -335,6 +340,28 @@ export default function Sidebar({ className = '' }: SidebarProps) {
                 })}
               </SidebarSection>
             )}
+
+            {/* Section 4: Pengaturan Akun (Kader & Bidan) */}
+            <SidebarSection label="Pengaturan Akun">
+              {accountNav.map((item) => {
+                const isActive = pathname === item.href;
+                return (
+                  <SidebarItem
+                    key={item.href}
+                    icon={item.icon}
+                    href={item.href}
+                    active={isActive}
+                    className={`transition-all text-xs font-semibold rounded-xl ${
+                      isActive
+                        ? '!bg-[#80000f] !text-white font-bold shadow-md shadow-[#80000f]/25 [&_[data-slot=sidebar-item-icon]]:!text-white'
+                        : '!text-slate-600 hover:!bg-[#fff5f6] hover:!text-[#80000f] [&_[data-slot=sidebar-item-icon]]:!text-[#80000f] group-hover/sidebar-item:[&_[data-slot=sidebar-item-icon]]:!text-[#80000f]'
+                    }`}
+                  >
+                    {item.name}
+                  </SidebarItem>
+                );
+              })}
+            </SidebarSection>
           </SidebarNav>
 
           {/* Profile & Logout Footer */}
@@ -507,7 +534,7 @@ export default function Sidebar({ className = '' }: SidebarProps) {
                   </div>
                 </div>
 
-                {/* Section 3 (Khusus Kader, disembunyikan untuk Bidan) */}
+                {/* Section 3: Kelola Landing Page (Khusus Kader, disembunyikan untuk Bidan) */}
                 {activeRole === 'kader' && (
                   <div>
                     <p className="px-3 py-1 text-[10px] font-extrabold uppercase tracking-wider text-slate-400">
@@ -517,7 +544,8 @@ export default function Sidebar({ className = '' }: SidebarProps) {
                       {landingNav.map((item) => {
                         const isActive =
                           pathname === item.href ||
-                          (item.href === '/kelola-galeri' && pathname === '/kelola-landing');
+                          pathname === '/kelola-jadwal' ||
+                          pathname === '/kelola-galeri';
                         return (
                           <Link
                             key={item.href}
@@ -542,6 +570,38 @@ export default function Sidebar({ className = '' }: SidebarProps) {
                     </div>
                   </div>
                 )}
+
+                {/* Section 4: Pengaturan Akun (Kader & Bidan) */}
+                <div>
+                  <p className="px-3 py-1 text-[10px] font-extrabold uppercase tracking-wider text-slate-400">
+                    Pengaturan Akun
+                  </p>
+                  <div className="space-y-1 mt-1">
+                    {accountNav.map((item) => {
+                      const isActive = pathname === item.href;
+                      return (
+                        <Link
+                          key={item.href}
+                          href={item.href}
+                          onClick={() => setMobileOpen(false)}
+                          className={`flex items-center justify-between p-2.5 rounded-xl text-xs font-semibold transition-all ${
+                            isActive
+                              ? 'bg-[#80000f] text-white font-bold shadow-md shadow-[#80000f]/25'
+                              : 'text-slate-700 hover:bg-[#fff5f6] hover:text-[#80000f]'
+                          }`}
+                        >
+                          <div className="flex items-center gap-2.5">
+                            <span className={isActive ? 'text-white' : 'text-[#80000f]'}>
+                              {item.icon}
+                            </span>
+                            <span>{item.name}</span>
+                          </div>
+                          <ChevronRight className="w-3.5 h-3.5 opacity-50" />
+                        </Link>
+                      );
+                    })}
+                  </div>
+                </div>
               </div>
 
               {/* Mobile Footer */}

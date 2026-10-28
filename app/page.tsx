@@ -435,7 +435,7 @@ export default function LandingPage() {
 
             <div className="pt-2">
               <a
-                href="https://wa.me/6281278901234?text=Halo%20Bidan%20Siti,%20saya%20ingin%20berkonsultasi%20seputar%20posyandu%20dan%20gizi%20keluarga"
+                href={`https://wa.me/${scheduleConfig.contactWhatsapp || '6281278901234'}?text=Halo%20${encodeURIComponent(scheduleConfig.contactPersonName || 'Bidan Siti')},%20saya%20ingin%20berkonsultasi%20seputar%20posyandu%20dan%20gizi%20keluarga`}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="inline-flex items-center justify-center px-8 py-4 rounded-full bg-rose-500 hover:bg-rose-600 text-white font-bold text-xs uppercase tracking-wider shadow-md shadow-rose-200 transition-all hover:scale-102 active:scale-98"
@@ -520,12 +520,14 @@ export default function LandingPage() {
                   <div className="flex items-center gap-3">
                     <span className="text-xl">🩺</span>
                     <div>
-                      <div className="font-bold text-xs text-slate-900">Bdn. Siti Rahma, S.Tr.Keb</div>
+                      <div className="font-bold text-xs text-slate-900" suppressHydrationWarning>
+                        {scheduleConfig.contactPersonName || 'Bdn. Siti Rahma, S.Tr.Keb'}
+                      </div>
                       <div className="text-[11px] text-rose-700">Bidan Pembina Wilayah RW 03</div>
                     </div>
                   </div>
                   <a
-                    href="https://wa.me/6281278901234?text=Halo%20Bidan%20Siti,%20saya%20warga%20RW%2003%20ingin%20konsultasi"
+                    href={`https://wa.me/${scheduleConfig.contactWhatsapp || '6281278901234'}?text=Halo%20${encodeURIComponent(scheduleConfig.contactPersonName || 'Bidan Siti')},%20saya%20warga%20RW%2003%20ingin%20konsultasi`}
                     target="_blank"
                     rel="noopener noreferrer"
                     className="px-4 py-1.5 rounded-full bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold shadow-2xs transition-colors"

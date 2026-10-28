@@ -8,6 +8,7 @@ export interface GalleryPhoto {
 }
 
 export interface PosyanduScheduleConfig {
+  id?: string;
   sessionDate: number;
   sessionMonth: string;
   sessionYear: number;
@@ -110,6 +111,7 @@ export const LandingStore = {
 
       if (!scheduleError && scheduleData) {
         const mappedSchedule: PosyanduScheduleConfig = {
+          id: scheduleData.id,
           sessionDate: scheduleData.session_date,
           sessionMonth: scheduleData.session_month,
           sessionYear: scheduleData.session_year,
@@ -241,26 +243,28 @@ export const LandingStore = {
 
     // Simpan ke Supabase jika terhubung
     if (isSupabaseConfigured && supabase) {
+      const payload: Record<string, any> = {
+        session_date: updated.sessionDate,
+        session_month: updated.sessionMonth,
+        session_year: updated.sessionYear,
+        session_day_name: updated.sessionDayName,
+        session_time: updated.sessionTime,
+        session_location: updated.sessionLocation,
+        address: updated.address,
+        target_summary: updated.targetSummary,
+        contact_person_name: updated.contactPersonName,
+        contact_whatsapp: updated.contactWhatsapp,
+        is_active: true,
+        updated_at: new Date().toISOString(),
+      };
+      if (updated.id) {
+        payload.id = updated.id;
+      }
+
       supabase
         .from('landing_jadwal')
-        .upsert(
-          {
-            session_date: updated.sessionDate,
-            session_month: updated.sessionMonth,
-            session_year: updated.sessionYear,
-            session_day_name: updated.sessionDayName,
-            session_time: updated.sessionTime,
-            session_location: updated.sessionLocation,
-            address: updated.address,
-            target_summary: updated.targetSummary,
-            contact_person_name: updated.contactPersonName,
-            contact_whatsapp: updated.contactWhatsapp,
-            is_active: true,
-            updated_at: new Date().toISOString(),
-          },
-          { onConflict: 'id' }
-        )
-        .then(({ error }) => {
+        .upsert(payload, { onConflict: 'id' })
+        .then(({ data, error }) => {
           if (error) console.warn('Gagal update jadwal ke Supabase:', error.message);
         });
     }

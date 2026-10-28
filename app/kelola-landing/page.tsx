@@ -496,16 +496,16 @@ export default function KelolaLandingPage({ initialTab = 'galeri' }: KelolaLandi
           {/* TAB 2: PILIH JADWAL POSYANDU TERINTEGRASI KE LANDING PAGE                */}
           {/* ========================================================================= */}
           {activeTab === 'jadwal' && (
-            <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
+            <div className="max-w-4xl w-full">
               {/* Form Input Jadwal */}
-              <div className="lg:col-span-7 bg-white rounded-3xl p-6 sm:p-7 border border-[#fce1e4] shadow-xs space-y-6">
+              <div className="bg-white rounded-3xl p-6 sm:p-8 border border-[#fce1e4] shadow-xs space-y-6">
                 <div>
                   <h3 className="font-serif text-lg font-bold text-slate-900 flex items-center gap-2">
                     <Calendar className="w-5 h-5 text-[#80000f]" />
                     <span>Konfigurasi Jadwal Pelaksanaan Posyandu</span>
                   </h3>
                   <p className="text-xs text-slate-500 mt-1">
-                    Ubah tanggal, hari, waktu, dan lokasi posyandu. Perubahan akan langsung tampil pada kalender interaktif dan frame kegiatan di landing page warga.
+                    Ubah tanggal, hari, waktu, dan lokasi posyandu. Perubahan akan langsung aktif secara otomatis pada kalender interaktif dan frame kegiatan di landing page warga.
                   </p>
                 </div>
 
@@ -629,19 +629,35 @@ export default function KelolaLandingPage({ initialTab = 'galeri' }: KelolaLandi
                     </div>
                   </div>
 
-                  {/* Sasaran Layanan & WhatsApp Bidan */}
+                  {/* Sasaran Layanan */}
+                  <div>
+                    <label className="block text-xs font-bold uppercase tracking-wider text-slate-700 mb-1.5">
+                      Sasaran Warga
+                    </label>
+                    <input
+                      type="text"
+                      value={schedule.targetSummary}
+                      onChange={(e) =>
+                        setSchedule({ ...schedule, targetSummary: e.target.value })
+                      }
+                      placeholder="Contoh: Balita (0-59 bln), Ibu Hamil, Busui, dan Lansia"
+                      className="w-full px-3.5 py-2.5 rounded-xl border border-[#fce1e4] text-xs focus:ring-2 focus:ring-[#80000f]/20 focus:border-[#80000f] focus:outline-none"
+                    />
+                  </div>
+
+                  {/* Penanggung Jawab Bidan & Nomor WhatsApp */}
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div>
                       <label className="block text-xs font-bold uppercase tracking-wider text-slate-700 mb-1.5">
-                        Sasaran Warga
+                        Nama Bidan / Petugas Siaga
                       </label>
                       <input
                         type="text"
-                        value={schedule.targetSummary}
+                        value={schedule.contactPersonName || ''}
                         onChange={(e) =>
-                          setSchedule({ ...schedule, targetSummary: e.target.value })
+                          setSchedule({ ...schedule, contactPersonName: e.target.value })
                         }
-                        placeholder="Contoh: Balita (0-59 bln), Ibu Hamil, Busui, dan Lansia"
+                        placeholder="Contoh: Bdn. Siti Rahma, S.Tr.Keb"
                         className="w-full px-3.5 py-2.5 rounded-xl border border-[#fce1e4] text-xs focus:ring-2 focus:ring-[#80000f]/20 focus:border-[#80000f] focus:outline-none"
                       />
                     </div>
@@ -665,7 +681,7 @@ export default function KelolaLandingPage({ initialTab = 'galeri' }: KelolaLandi
                   <div className="pt-4 flex flex-col sm:flex-row items-center gap-3">
                     <button
                       type="submit"
-                      className="w-full sm:w-auto px-8 py-3 rounded-full bg-[#80000f] hover:bg-[#66000c] text-white font-bold text-xs uppercase tracking-wider shadow-md shadow-[#80000f]/20 transition-all hover:scale-102 active:scale-98"
+                      className="w-full sm:w-auto px-8 py-3 rounded-full bg-[#80000f] hover:bg-[#66000c] text-white font-bold text-xs uppercase tracking-wider shadow-md shadow-[#80000f]/20 transition-all hover:scale-102 active:scale-98 cursor-pointer"
                     >
                       Simpan &amp; Terapkan ke Landing Page
                     </button>
@@ -673,61 +689,12 @@ export default function KelolaLandingPage({ initialTab = 'galeri' }: KelolaLandi
                     <button
                       type="button"
                       onClick={handleResetSchedule}
-                      className="w-full sm:w-auto px-5 py-3 rounded-full border border-[#fce1e4] hover:bg-[#fff5f6] text-slate-700 font-bold text-xs transition-colors"
+                      className="w-full sm:w-auto px-5 py-3 rounded-full border border-[#fce1e4] hover:bg-[#fff5f6] text-slate-700 font-bold text-xs transition-colors cursor-pointer"
                     >
                       Reset Default
                     </button>
                   </div>
                 </form>
-              </div>
-
-              {/* Preview Interaktif Jadwal */}
-              <div className="lg:col-span-5 space-y-4">
-                <div className="bg-white rounded-3xl p-6 sm:p-7 border border-[#fce1e4] shadow-xs space-y-4">
-                  <h4 className="font-serif text-sm font-bold text-slate-900 flex items-center gap-2">
-                    <Eye className="w-4 h-4 text-[#80000f]" />
-                    <span>Pratinjau Tampilan Jadwal di Landing Page</span>
-                  </h4>
-
-                  {/* Mock Activity Frame */}
-                  <div className="p-5 rounded-2xl bg-gradient-to-br from-[#fff5f6] to-white border border-[#fce1e4] shadow-2xs space-y-3">
-                    <p className="text-[10px] font-bold uppercase tracking-wider text-[#80000f]">
-                      Pelaksanaan Serentak &bull; Binaan Puskesmas Pembina
-                    </p>
-                    <h3 className="font-serif text-xl font-bold text-slate-900">
-                      {schedule.sessionDayName}, {schedule.sessionDate} {schedule.sessionMonth}{' '}
-                      {schedule.sessionYear}
-                    </h3>
-                    <div className="flex items-center gap-3 text-xs text-slate-600 font-semibold">
-                      <span className="flex items-center gap-1 text-[#80000f]">
-                        <Clock className="w-3.5 h-3.5" />
-                        {schedule.sessionTime}
-                      </span>
-                      <span>&bull;</span>
-                      <span className="flex items-center gap-1">
-                        <MapPin className="w-3.5 h-3.5 text-slate-400" />
-                        {schedule.sessionLocation}
-                      </span>
-                    </div>
-
-                    <div className="pt-2 text-[11px] text-slate-500 border-t border-[#fce1e4]">
-                      Sasaran: <strong>{schedule.targetSummary}</strong>
-                    </div>
-                  </div>
-
-                  <div className="p-4 rounded-2xl bg-[#fff5f6] border border-[#fce1e4] text-xs text-slate-600 space-y-1.5">
-                    <p className="font-bold text-slate-900 flex items-center gap-1.5">
-                      <CheckCircle2 className="w-4 h-4 text-[#80000f]" />
-                      <span>Integrasi Otomatis Landing Page:</span>
-                    </p>
-                    <p className="text-[11px] leading-relaxed">
-                      1. Angka tanggal <strong>{schedule.sessionDate}</strong> otomatis diberi tanda lingkaran merah dan badge <em>SERENTAK</em> pada kalender publik.
-                    </p>
-                    <p className="text-[11px] leading-relaxed">
-                      2. Teks informasi jadwal dan tombol pengingat WhatsApp di landing page otomatis terhubung dengan nomor <strong>{schedule.contactWhatsapp}</strong>.
-                    </p>
-                  </div>
-                </div>
               </div>
             </div>
           )}
