@@ -36,10 +36,28 @@ interface SidebarProps {
 
 export default function Sidebar({ className = '' }: SidebarProps) {
   const pathname = usePathname();
-  const [collapsed, setCollapsed] = useState(false);
+  const [collapsed, setCollapsed] = useState<boolean>(() => {
+    if (typeof window !== 'undefined') {
+      return localStorage.getItem('posyandu_sidebar_collapsed') === 'true';
+    }
+    return false;
+  });
   const [mounted, setMounted] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
-  const [activeRole, setActiveRole] = useState<'bidan' | 'kader'>('bidan');
+  const [activeRole, setActiveRole] = useState<'bidan' | 'kader'>(() => {
+    if (typeof window !== 'undefined') {
+      const saved = localStorage.getItem('posyandu_active_role');
+      if (saved === 'kader' || saved === 'bidan') return saved;
+      const auth = localStorage.getItem('posyandu_auth_user');
+      if (auth) {
+        try {
+          const parsed = JSON.parse(auth);
+          if (parsed.role === 'kader' || parsed.role === 'bidan') return parsed.role;
+        } catch {}
+      }
+    }
+    return 'kader';
+  });
 
   // Synchronize collapsed state & active role with localStorage
   useEffect(() => {
@@ -206,21 +224,28 @@ export default function Sidebar({ className = '' }: SidebarProps) {
           collapsedWidth={68}
           className="border-r border-[#fce1e4] bg-white shadow-xs"
         >
-          {/* Header Brand */}
-          <SidebarHeader className="border-b border-[#fce1e4] p-3.5 bg-white">
-            <div className="flex items-center justify-between w-full">
-              <div
-                className="flex items-center gap-2.5 overflow-hidden select-none"
-                title="Posyandu Melati RW 03"
-              >
-                <div className="relative w-8 h-8 rounded-xl bg-[#fff0f2] border border-[#fce1e4] flex items-center justify-center p-1 shrink-0 shadow-2xs">
-                  <img
-                    src="/images/logo-posyandu.png"
-                    alt="Logo Posyandu Melati"
-                    className="w-full h-full object-contain"
-                  />
-                </div>
-                {!collapsed && (
+          {/* Header Brand (Tinggi h-[72px] presisi menyamai Top Header) */}
+          <SidebarHeader className="h-[72px] shrink-0 border-b border-[#fce1e4] px-3.5 bg-white flex items-center">
+            {collapsed ? (
+              <div className="w-full flex items-center justify-center">
+                <SidebarToggle
+                  className="w-9 h-9 rounded-xl bg-[#fff0f2] border border-[#fce1e4] text-[#80000f] hover:bg-[#80000f] hover:text-white transition-all shadow-2xs flex items-center justify-center cursor-pointer"
+                  title="Perluas Sidebar"
+                />
+              </div>
+            ) : (
+              <div className="flex items-center justify-between w-full">
+                <div
+                  className="flex items-center gap-2.5 overflow-hidden select-none"
+                  title="Posyandu Melati RW 03"
+                >
+                  <div className="relative w-8 h-8 rounded-xl bg-[#fff0f2] border border-[#fce1e4] flex items-center justify-center p-1 shrink-0 shadow-2xs">
+                    <img
+                      src="/images/logo-posyandu.png"
+                      alt="Logo Posyandu Melati"
+                      className="w-full h-full object-contain"
+                    />
+                  </div>
                   <div className="flex flex-col text-left overflow-hidden">
                     <span className="font-serif font-black text-xs tracking-wider text-slate-900 uppercase truncate">
                       POSYANDU <span className="text-[#80000f]">MELATI</span>
@@ -229,10 +254,13 @@ export default function Sidebar({ className = '' }: SidebarProps) {
                       RW 03 Sukamaju
                     </span>
                   </div>
-                )}
+                </div>
+                <SidebarToggle
+                  className="text-[#80000f] hover:bg-[#fff5f6] hover:text-[#80000f] border border-[#fce1e4] rounded-lg transition-colors p-1 cursor-pointer"
+                  title="Perkecil Sidebar"
+                />
               </div>
-              <SidebarToggle className="text-[#80000f] hover:bg-[#fff5f6] hover:text-[#80000f] border border-[#fce1e4] rounded-lg transition-colors p-1" />
-            </div>
+            )}
           </SidebarHeader>
 
           {/* Navigation Links */}
@@ -310,34 +338,53 @@ export default function Sidebar({ className = '' }: SidebarProps) {
           </SidebarNav>
 
           {/* Profile & Logout Footer */}
-          <SidebarFooter className="border-t border-[#fce1e4] bg-[#fffafb] p-3 space-y-2.5">
-            <div className="w-full flex items-center justify-between overflow-hidden">
-              <div className="flex items-center gap-2.5 overflow-hidden">
-                <div className="h-8 w-8 rounded-xl bg-[#80000f] text-white font-black text-xs flex items-center justify-center shrink-0 shadow-sm shadow-[#80000f]/25">
+          <SidebarFooter className={`border-t border-[#fce1e4] bg-white ${collapsed ? 'p-2 flex flex-col items-center gap-2' : 'p-3 space-y-2.5'}`}>
+            {collapsed ? (
+              <div className="flex flex-col items-center gap-2 w-full">
+                <div
+                  className="h-8 w-8 rounded-xl bg-[#80000f] text-white font-black text-xs flex items-center justify-center shrink-0 shadow-sm shadow-[#80000f]/25"
+                  title={activeRole === 'bidan' ? 'Bdn. Ratna (Bidan Desa)' : 'Kader Posyandu RW 03'}
+                >
                   {activeRole === 'bidan' ? '👩‍⚕️' : '🧕'}
                 </div>
-                {!collapsed && (
-                  <div className="overflow-hidden">
-                    <p className="text-xs font-bold text-slate-900 truncate">
-                      {activeRole === 'bidan' ? 'Bdn. Ratna (Bidan Desa)' : 'Kader Posyandu RW 03'}
-                    </p>
-                    <p className="text-[10px] text-slate-500 font-medium truncate">
-                      {activeRole === 'bidan' ? 'Supervisi & Penanggung Jawab' : 'Pelaksana Meja 1–4'}
-                    </p>
-                  </div>
-                )}
+                <button
+                  type="button"
+                  onClick={handleLogout}
+                  className="w-9 h-9 flex items-center justify-center rounded-xl text-[#80000f] hover:text-white bg-white hover:bg-[#80000f] transition-all border border-[#fce1e4] hover:border-[#80000f] shadow-2xs group cursor-pointer shrink-0"
+                  title="Keluar / Logout dari Dashboard"
+                >
+                  <LogOut className="w-3.5 h-3.5 shrink-0 transition-transform group-hover:-translate-x-0.5" />
+                </button>
               </div>
-            </div>
+            ) : (
+              <>
+                <div className="w-full flex items-center justify-between overflow-hidden">
+                  <div className="flex items-center gap-2.5 overflow-hidden">
+                    <div className="h-8 w-8 rounded-xl bg-[#80000f] text-white font-black text-xs flex items-center justify-center shrink-0 shadow-sm shadow-[#80000f]/25">
+                      {activeRole === 'bidan' ? '👩‍⚕️' : '🧕'}
+                    </div>
+                    <div className="overflow-hidden">
+                      <p className="text-xs font-bold text-slate-900 truncate">
+                        {activeRole === 'bidan' ? 'Bdn. Ratna (Bidan Desa)' : 'Kader Posyandu RW 03'}
+                      </p>
+                      <p className="text-[10px] text-slate-500 font-medium truncate">
+                        {activeRole === 'bidan' ? 'Supervisi & Penanggung Jawab' : 'Pelaksana Meja 1–4'}
+                      </p>
+                    </div>
+                  </div>
+                </div>
 
-            <button
-              type="button"
-              onClick={handleLogout}
-              className="w-full flex items-center justify-center gap-2 px-3 py-2.5 rounded-xl text-xs font-bold text-[#80000f] hover:text-white bg-white hover:bg-[#80000f] transition-all border border-[#fce1e4] hover:border-[#80000f] shadow-2xs group cursor-pointer"
-              title="Keluar / Logout dari Dashboard"
-            >
-              <LogOut className="w-3.5 h-3.5 shrink-0 transition-transform group-hover:-translate-x-0.5" />
-              {!collapsed && <span>Keluar / Logout</span>}
-            </button>
+                <button
+                  type="button"
+                  onClick={handleLogout}
+                  className="w-full flex items-center justify-center gap-2 px-3 py-2.5 rounded-xl text-xs font-bold text-[#80000f] hover:text-white bg-white hover:bg-[#80000f] transition-all border border-[#fce1e4] hover:border-[#80000f] shadow-2xs group cursor-pointer"
+                  title="Keluar / Logout dari Dashboard"
+                >
+                  <LogOut className="w-3.5 h-3.5 shrink-0 transition-transform group-hover:-translate-x-0.5" />
+                  <span>Keluar / Logout</span>
+                </button>
+              </>
+            )}
           </SidebarFooter>
         </BaseSidebar>
       </div>

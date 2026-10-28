@@ -109,7 +109,7 @@ export default function Header({
   };
 
   return (
-    <header className="h-[76px] sm:h-[88px] shrink-0 bg-white/95 border-b border-[#fce1e4] px-4 sm:px-8 flex items-center justify-between lg:justify-end sticky top-0 z-30 backdrop-blur-md">
+    <header className="h-[72px] shrink-0 bg-white/95 border-b border-[#fce1e4] px-4 sm:px-8 flex items-center justify-between lg:justify-end sticky top-0 z-30 backdrop-blur-md">
       {/* Mobile Hamburger Menu Toggle (Visible on screens < lg) */}
       <div className="flex items-center gap-2.5 lg:hidden">
         <button

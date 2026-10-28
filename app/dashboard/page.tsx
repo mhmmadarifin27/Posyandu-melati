@@ -134,7 +134,7 @@ export default function DashboardPage() {
   const isBidan = currentRole === 'bidan';
 
   return (
-    <div className="flex min-h-screen bg-[#fffafb] text-slate-900 font-sans selection:bg-[#fce1e4] selection:text-[#80000f]">
+    <div className="flex min-h-screen bg-[#f8fafc] text-slate-900 font-sans selection:bg-[#fce1e4] selection:text-[#80000f]">
       {/* Sidebar (Collapsible with Framer Motion, fixed in place while page scrolls) */}
       <Sidebar />
 

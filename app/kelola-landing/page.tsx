@@ -216,7 +216,7 @@ export default function KelolaLandingPage({ initialTab = 'galeri' }: KelolaLandi
   ];
 
   return (
-    <div className="flex min-h-screen bg-[#fafaf9] text-slate-900 font-sans selection:bg-[#fce1e4] selection:text-[#80000f]">
+    <div className="flex min-h-screen bg-[#f8fafc] text-slate-900 font-sans selection:bg-[#fce1e4] selection:text-[#80000f]">
       <Sidebar />
 
       <div className="flex-1 flex flex-col min-w-0">

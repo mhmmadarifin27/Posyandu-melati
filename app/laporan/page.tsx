@@ -79,7 +79,7 @@ export default function LaporanPage() {
   const countBumilKEK = bumilList.filter((b) => b.statusKEK || b.lilaSaatIni < 23.5).length;
 
   return (
-    <div className="flex min-h-screen bg-[#f5f7f9]">
+    <div className="flex min-h-screen bg-[#f8fafc]">
       <div className="no-print">
         <Sidebar />
       </div>
