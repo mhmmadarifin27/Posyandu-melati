@@ -345,40 +345,54 @@ export default function LandingPage() {
       </section>
 
       {/* ========================================================================= */}
-      {/* 7. FEATURE SECTION 1: TRUSTED COMMUNITY PARTNER (Sinceri Exact 50/50 Full-Bleed) */}
+      {/* 7. FEATURE SECTION 1: TRUSTED COMMUNITY PARTNER                          */}
       {/* ========================================================================= */}
-      <section className="w-full bg-[#fdf8f9] border-y border-rose-100 overflow-hidden">
-        <div className="w-full grid grid-cols-1 lg:grid-cols-2 items-stretch">
-          {/* Left: 50% Full-bleed Image (Touches left screen edge, 0 margin) */}
-          <div className="w-full h-[360px] sm:h-[440px] lg:h-auto min-h-[420px] lg:min-h-[520px] relative">
-            <img
-              src="/images/mitra_posyandu.jpg"
-              alt="Pemberian Vitamin A di Posyandu Melati"
-              className="w-full h-full object-cover object-center"
-            />
-          </div>
+      <section className="py-16 sm:py-20 lg:py-24 bg-[#fffafb] border-y border-rose-100 overflow-hidden">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-10 lg:gap-14 items-center">
+            {/* Left: Framed, Proportionate Image Container (5 cols on lg) */}
+            <div className="lg:col-span-5 relative">
+              <div className="relative rounded-3xl overflow-hidden shadow-xl shadow-rose-950/5 border border-rose-100/90 aspect-[4/3] sm:aspect-[16/11] lg:aspect-[4/3] max-h-[440px] w-full bg-rose-50">
+                <img
+                  src="/images/mitra_posyandu_hd.jpg"
+                  alt="Pelayanan Posyandu Melati Bersama Bidan dan Kader"
+                  className="w-full h-full object-cover object-center transform transition duration-500 hover:scale-103"
+                  loading="lazy"
+                />
+              </div>
+              {/* Decorative Subtle Badge */}
+              <div className="absolute -bottom-3 right-4 sm:right-6 bg-white/95 backdrop-blur-md px-3.5 py-2 rounded-2xl shadow-md border border-rose-100 flex items-center gap-2">
+                <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse shrink-0" />
+                <span className="text-xs font-bold text-slate-800">Mitra Terpercaya RW 03</span>
+              </div>
+            </div>
 
-          {/* Right: 50% Spacious Editorial Text Container */}
-          <div className="flex flex-col justify-center px-6 sm:px-12 lg:px-16 xl:px-24 py-14 lg:py-20 space-y-6 text-left">
-            <h2 className="font-serif text-3xl sm:text-4xl lg:text-5xl font-bold text-slate-900 tracking-tight leading-[1.15]">
-              Posyandu Melati adalah Mitra Terpercaya Tumbuh Kembang &amp; Kesehatan Keluarga
-            </h2>
+            {/* Right: Editorial Text Container (7 cols on lg) */}
+            <div className="lg:col-span-7 flex flex-col justify-center space-y-5 text-left">
+              <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-rose-50 border border-rose-200 text-rose-700 text-xs font-semibold w-fit">
+                <span>Pelayanan Ramah &amp; Terintegrasi</span>
+              </div>
 
-            <p className="text-slate-600 text-sm sm:text-base lg:text-lg leading-relaxed">
-              Rangkaian layanan kami dirancang untuk menjawab kebutuhan kesehatan seluruh anggota keluarga di lingkungan RW 03 Sukamaju. Bersama tenaga bidan berlisensi dan kader posyandu yang tulus, Anda selalu memiliki tempat yang ramah dan nyaman untuk berkonsultasi mengenai nutrisi anak, kehamilan, hingga keluhan kesehatan lansia.
-            </p>
+              <h2 className="font-serif text-2xl sm:text-3xl lg:text-4xl xl:text-5xl font-bold text-slate-900 tracking-tight leading-[1.2]">
+                Posyandu Melati adalah Mitra Terpercaya Tumbuh Kembang &amp; Kesehatan Keluarga
+              </h2>
 
-            <p className="text-slate-600 text-sm sm:text-base lg:text-lg leading-relaxed">
-              Temukan jadwal sesi posyandu terdekat untuk keluarga Anda dan pastikan kehadiran buah hati Anda untuk mendapatkan pemantauan kurva KMS WHO secara cuma-cuma!
-            </p>
+              <p className="text-slate-600 text-sm sm:text-base lg:text-lg leading-relaxed">
+                Rangkaian layanan kami dirancang untuk menjawab kebutuhan kesehatan seluruh anggota keluarga di lingkungan RW 03 Sukamaju. Bersama tenaga bidan berlisensi dan kader posyandu yang tulus, Anda selalu memiliki tempat yang ramah dan nyaman untuk berkonsultasi mengenai nutrisi anak, kehamilan, hingga keluhan kesehatan lansia.
+              </p>
 
-            <div className="pt-2">
-              <a
-                href="#jadwal"
-                className="inline-flex items-center justify-center px-8 py-4 rounded-full bg-rose-500 hover:bg-rose-600 text-white font-bold text-xs uppercase tracking-wider shadow-md shadow-rose-200 transition-all hover:scale-102 active:scale-98"
-              >
-                Temukan Jadwal Sesi Terdekat
-              </a>
+              <p className="text-slate-600 text-sm sm:text-base lg:text-lg leading-relaxed">
+                Temukan jadwal sesi posyandu terdekat untuk keluarga Anda dan pastikan kehadiran buah hati Anda untuk mendapatkan pemantauan kurva KMS WHO secara cuma-cuma!
+              </p>
+
+              <div className="pt-2">
+                <a
+                  href="#jadwal"
+                  className="inline-flex items-center justify-center px-8 py-3.5 rounded-full bg-rose-500 hover:bg-rose-600 text-white font-bold text-xs uppercase tracking-wider shadow-md shadow-rose-200 transition-all hover:scale-102 active:scale-98"
+                >
+                  Temukan Jadwal Sesi Terdekat
+                </a>
+              </div>
             </div>
           </div>
         </div>
@@ -435,41 +449,55 @@ export default function LandingPage() {
       {/* ========================================================================= */}
       {/* 10. FEATURE SECTION: DECISION GUIDE (NOW POSITIONED BELOW JADWAL)          */}
       {/* ========================================================================= */}
-      <section id="sasaran" className="w-full bg-[#fffafb] border-t border-rose-100 overflow-hidden">
-        <div className="w-full grid grid-cols-1 lg:grid-cols-2 items-stretch">
-          {/* Left: 50% Spacious Editorial Text Container */}
-          <div className="flex flex-col justify-center px-6 sm:px-12 lg:px-16 xl:px-24 py-14 lg:py-20 space-y-6 text-left order-2 lg:order-1">
-            <h2 className="font-serif text-3xl sm:text-4xl lg:text-5xl font-bold text-slate-900 tracking-tight leading-[1.15]">
-              Apakah Posyandu Melati Pilihan Tepat untuk Keluarga Anda?
-            </h2>
+      <section id="sasaran" className="py-16 sm:py-20 lg:py-24 bg-[#fffafb] border-t border-rose-100 overflow-hidden">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-10 lg:gap-14 items-center">
+            {/* Left: Editorial Text Container (7 cols on lg) */}
+            <div className="lg:col-span-7 flex flex-col justify-center space-y-5 text-left order-2 lg:order-1">
+              <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-rose-50 border border-rose-200 text-rose-700 text-xs font-semibold w-fit">
+                <span>Panduan &amp; Konseling Keluarga</span>
+              </div>
 
-            <p className="text-slate-600 text-sm sm:text-base lg:text-lg leading-relaxed">
-              Memastikan buah hati tumbuh optimal dan orang tua tercinta tetap sehat adalah keputusan penting bagi setiap keluarga. Anda berhak mendapatkan seluruh informasi dan sarana pendukung terbaik untuk memandu keputusan gizi keluarga.
-            </p>
+              <h2 className="font-serif text-2xl sm:text-3xl lg:text-4xl xl:text-5xl font-bold text-slate-900 tracking-tight leading-[1.2]">
+                Apakah Posyandu Melati Pilihan Tepat untuk Keluarga Anda?
+              </h2>
 
-            <p className="text-slate-600 text-sm sm:text-base lg:text-lg leading-relaxed">
-              Di Posyandu Melati, kami percaya bahwa setiap warga berhak melangkah dengan keyakinan penuh. Manfaatkan sarana pelayanan terpadu kami seperti <strong>Kalkulator Status Gizi KMS WHO</strong>, <strong>Rekomendasi Menu Gizi Tambahan PMT</strong>, dan <strong>Buku Panduan KIA</strong> untuk membantu Anda memantau kebutuhan nutrisi keluarga. Bidan dan kader kami hadir mendampingi di setiap langkah!
-            </p>
+              <p className="text-slate-600 text-sm sm:text-base lg:text-lg leading-relaxed">
+                Memastikan buah hati tumbuh optimal dan orang tua tercinta tetap sehat adalah keputusan penting bagi setiap keluarga. Anda berhak mendapatkan seluruh informasi dan sarana pendukung terbaik untuk memandu keputusan gizi keluarga.
+              </p>
 
-            <div className="pt-2">
-              <a
-                href={`https://wa.me/${scheduleConfig.contactWhatsapp || '6281278901234'}?text=Halo%20${encodeURIComponent(scheduleConfig.contactPersonName || 'Bidan Siti')},%20saya%20ingin%20berkonsultasi%20seputar%20posyandu%20dan%20gizi%20keluarga`}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="inline-flex items-center justify-center px-8 py-4 rounded-full bg-rose-500 hover:bg-rose-600 text-white font-bold text-xs uppercase tracking-wider shadow-md shadow-rose-200 transition-all hover:scale-102 active:scale-98"
-              >
-                Mulai Konsultasi Sekarang
-              </a>
+              <p className="text-slate-600 text-sm sm:text-base lg:text-lg leading-relaxed">
+                Di Posyandu Melati, kami percaya bahwa setiap warga berhak melangkah dengan keyakinan penuh. Manfaatkan sarana pelayanan terpadu kami seperti <strong>Kalkulator Status Gizi KMS WHO</strong>, <strong>Rekomendasi Menu Gizi Tambahan PMT</strong>, dan <strong>Buku Panduan KIA</strong> untuk membantu Anda memantau kebutuhan nutrisi keluarga. Bidan dan kader kami hadir mendampingi di setiap langkah!
+              </p>
+
+              <div className="pt-2">
+                <a
+                  href={`https://wa.me/${scheduleConfig.contactWhatsapp || '6281278901234'}?text=Halo%20${encodeURIComponent(scheduleConfig.contactPersonName || 'Bidan Siti')},%20saya%20ingin%20berkonsultasi%20seputar%20posyandu%20dan%20gizi%20keluarga`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center justify-center px-8 py-3.5 rounded-full bg-rose-500 hover:bg-rose-600 text-white font-bold text-xs uppercase tracking-wider shadow-md shadow-rose-200 transition-all hover:scale-102 active:scale-98"
+                >
+                  Mulai Konsultasi Sekarang
+                </a>
+              </div>
             </div>
-          </div>
 
-          {/* Right: 50% Full-bleed Image (Touches right screen edge, 0 margin) */}
-          <div className="w-full h-[360px] sm:h-[440px] lg:h-auto min-h-[420px] lg:min-h-[520px] relative order-1 lg:order-2">
-            <img
-              src="/images/konseling_pilihan_tepat.jpg"
-              alt="Konseling Personal di Posyandu Melati"
-              className="w-full h-full object-cover object-center"
-            />
+            {/* Right: Framed, Proportionate Image Container (5 cols on lg) */}
+            <div className="lg:col-span-5 relative order-1 lg:order-2">
+              <div className="relative rounded-3xl overflow-hidden shadow-xl shadow-rose-950/5 border border-rose-100/90 aspect-[4/3] sm:aspect-[16/11] lg:aspect-[4/3] max-h-[440px] w-full bg-rose-50">
+                <img
+                  src="/images/konseling_pilihan_tepat_hd.jpg"
+                  alt="Konseling Personal Keluarga di Posyandu Melati"
+                  className="w-full h-full object-cover object-center transform transition duration-500 hover:scale-103"
+                  loading="lazy"
+                />
+              </div>
+              {/* Decorative Subtle Badge */}
+              <div className="absolute -bottom-3 left-4 sm:left-6 bg-white/95 backdrop-blur-md px-3.5 py-2 rounded-2xl shadow-md border border-rose-100 flex items-center gap-2">
+                <span className="w-2.5 h-2.5 rounded-full bg-rose-500 animate-pulse shrink-0" />
+                <span className="text-xs font-bold text-slate-800">Konsultasi KIA &amp; KMS WHO</span>
+              </div>
+            </div>
           </div>
         </div>
       </section>
