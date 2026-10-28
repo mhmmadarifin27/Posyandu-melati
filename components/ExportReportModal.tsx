@@ -3,7 +3,6 @@
 import React from 'react';
 import {
   X,
-  Printer,
   Download,
   FileSpreadsheet,
   Baby,
@@ -46,15 +45,6 @@ export default function ExportReportModal({
   ];
 
   const currentMonthName = MONTH_NAMES[selectedMonth - 1] || 'Oktober';
-
-  // Tutup modal terlebih dahulu agar tidak menutupi tampilan cetak / PDF kertas A4
-  const handlePrint = () => {
-    onClose();
-    toast.info('Menyiapkan Lembar Cetak', 'Membuka dialog cetak laporan resmi Puskesmas.');
-    setTimeout(() => {
-      window.print();
-    }, 250);
-  };
 
   // Helper untuk escape format CSV agar aman di Excel
   const escapeCSV = (val: any) => {
@@ -311,14 +301,14 @@ export default function ExportReportModal({
             <div>
               <div className="flex items-center gap-2">
                 <h3 className="text-base font-extrabold text-slate-900">
-                  Ekspor &amp; Cetak Dokumen Resmi
+                  Ekspor Data CSV Posyandu
                 </h3>
                 <span className="px-2 py-0.5 rounded-full bg-[#fce1e4] text-[#80000f] text-[10px] font-bold border border-[#f8c8c8]">
                   {currentMonthName} {selectedYear}
                 </span>
               </div>
               <p className="text-xs text-slate-500 mt-0.5">
-                Format resmi pelaporan bulanan UPTD Puskesmas Pembina &amp; Posyandu Melati
+                Unduh rekapitulasi data kependudukan dan kesehatan dalam format file spreadsheet (CSV) kompatibel Microsoft Excel.
               </p>
             </div>
           </div>
@@ -332,32 +322,8 @@ export default function ExportReportModal({
           </button>
         </div>
 
-        {/* 4 Opsi Ekspor & Cetak yang Tertata Rapi */}
+        {/* 3 Opsi Unduhan CSV Data */}
         <div className="p-6 space-y-3.5 text-xs">
-          {/* Opsi 1: Cetak Lembar Resmi A4 (PDF) */}
-          <div className="p-4 bg-gradient-to-r from-[#fff5f6] to-white border-2 border-[#fce1e4] rounded-2xl flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-2xs">
-            <div className="space-y-1">
-              <div className="flex items-center gap-2">
-                <span className="w-6 h-6 rounded-lg bg-[#80000f] text-white flex items-center justify-center text-xs font-bold">
-                  <Printer className="w-3.5 h-3.5" />
-                </span>
-                <h4 className="font-bold text-slate-900 text-sm">
-                  Cetak Lembar Resmi Puskesmas (A4 / PDF)
-                </h4>
-              </div>
-              <p className="text-slate-600 text-[11px] leading-relaxed pl-8">
-                Format cetak dinas formal hitam putih lengkap dengan Kop Pemprov Sumsel, Nomor Surat Romawi, dan Tanda Tangan Bidan Pembina.
-              </p>
-            </div>
-            <button
-              type="button"
-              onClick={handlePrint}
-              className="flex items-center justify-center gap-2 px-5 py-2.5 bg-[#80000f] hover:bg-[#66000c] text-white rounded-full font-bold shadow-md shadow-[#80000f]/20 transition-all hover:scale-102 shrink-0 cursor-pointer"
-            >
-              <Printer className="w-3.5 h-3.5" />
-              <span>Cetak / PDF</span>
-            </button>
-          </div>
 
           {/* Opsi 2: Data Balita & Antropometri KMS (CSV) */}
           <div className="p-4 bg-slate-50 hover:bg-slate-50/80 border border-slate-200 rounded-2xl flex flex-col sm:flex-row sm:items-center justify-between gap-3 transition-colors">
