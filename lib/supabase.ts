@@ -46,8 +46,8 @@ const STORAGE_KEYS = {
   PEMERIKSAAN_LANSIA: 'posyandu_melati_pem_lansia_v3',
   MENU_MBG: 'posyandu_melati_menu_mbg_v3',
   POSYANDU: 'posyandu_saas_tenants_v1',
-  ACCOUNTS: 'posyandu_saas_accounts_v1',
-  REGISTRATIONS: 'posyandu_saas_registrations_v1',
+  ACCOUNTS: 'posyandu_saas_accounts_v2',
+  REGISTRATIONS: 'posyandu_saas_registrations_v2',
   ACTIVE_FILTER_POSYANDU: 'posyandu_active_filter_posyandu',
   SYNC_INITIALIZED: 'posyandu_melati_supabase_synced_v1',
 };
@@ -359,28 +359,90 @@ export class PosyanduStore {
         this.savePosyanduList(mergedPosyandu);
       }
 
-      // 7. Sync Profiles to Accounts
+      // 7. Sync Profiles to Accounts & Detect Cloud Registrations across Devices
       const { data: dbProfiles, error: errProfiles } = await supabase.from('profiles').select('*');
       if (!errProfiles && dbProfiles && dbProfiles.length > 0) {
         const existingAccounts = this.getAccounts();
         let updatedAccounts = [...existingAccounts];
+        const existingRegistrations = this.getRegistrations();
+        let updatedRegistrations = [...existingRegistrations];
+        let regChanged = false;
+
         dbProfiles.forEach((p: any) => {
-          if (p.email && !updatedAccounts.some((a) => a.email.toLowerCase() === p.email.toLowerCase())) {
+          const emailLower = p.email ? p.email.toLowerCase() : '';
+          if (!emailLower) return;
+
+          // Cek apakah akun ini adalah admin_posyandu yang belum memiliki unit aktif / belum di-ACC (posyandu_id kosong / null)
+          const isPendingTenant =
+            p.role === 'admin_posyandu' &&
+            (!p.posyandu_id || p.posyandu_id === null || p.posyandu_id === '');
+
+          if (isPendingTenant) {
+            const hasReg = updatedRegistrations.some(
+              (r) => r.emailAdmin.toLowerCase() === emailLower
+            );
+            if (!hasReg) {
+              updatedRegistrations.unshift({
+                id: `reg-${p.id}`,
+                namaPosyandu: p.posyandu || 'Posyandu Unit Baru',
+                strataPosyandu: 'Mandiri',
+                puskesmas: 'UPTD Puskesmas Pembina',
+                provinsi: 'Sumatera Selatan',
+                kotaKab: 'Kota Palembang',
+                kecamatan: 'Kecamatan Sako',
+                kelurahan: 'Sukamaju',
+                rw: '01',
+                rt: '01',
+                alamat: `Balai Posyandu ${p.posyandu || ''}`,
+                kodePos: '30164',
+                namaKetua: p.nama
+                  ? p.nama.replace(/^Admin\s+/i, '').replace(/\s*\(.*\)$/, '')
+                  : 'Pengurus Posyandu',
+                noWhatsapp: p.no_hp || '-',
+                emailAdmin: emailLower,
+                passwordAdmin: '123456',
+                status: 'pending',
+                createdAt: p.created_at
+                  ? p.created_at.split('T')[0]
+                  : new Date().toISOString().split('T')[0],
+                notes:
+                  'Pendaftaran online mandiri dari perangkat lain (Tersinkronisasi otomatis dari Supabase Cloud).',
+              });
+              regChanged = true;
+            }
+          }
+
+          // Sinkronisasi ke daftar akun
+          const accIndex = updatedAccounts.findIndex(
+            (a) => a.email.toLowerCase() === emailLower
+          );
+          if (accIndex < 0) {
             updatedAccounts.push({
               id: p.id,
               nama: p.nama,
-              email: p.email.toLowerCase(),
+              email: emailLower,
               role: p.role,
               posyanduId: p.posyandu_id,
               posyanduNama: p.posyandu,
               posyandu: p.posyandu,
               noHp: p.no_hp || '-',
+              status: isPendingTenant ? 'pending' : 'approved',
               jabatan: `${p.role === 'super_admin' ? 'Super Admin' : 'Admin'} ${p.posyandu || ''}`,
-              createdAt: p.created_at ? p.created_at.split('T')[0] : new Date().toISOString().split('T')[0],
+              createdAt: p.created_at
+                ? p.created_at.split('T')[0]
+                : new Date().toISOString().split('T')[0],
             });
+          } else {
+            if (isPendingTenant && !updatedAccounts[accIndex].status) {
+              updatedAccounts[accIndex].status = 'pending';
+            }
           }
         });
+
         this.saveAccounts(updatedAccounts);
+        if (regChanged) {
+          this.saveRegistrations(updatedRegistrations);
+        }
       }
 
       localStorage.setItem(STORAGE_KEYS.SYNC_INITIALIZED, 'true');
@@ -747,8 +809,19 @@ export class PosyanduStore {
   }
 
   static deleteAccount(id: string): void {
+    const target = this.getAccounts().find((a) => a.id === id);
     const list = this.getAccounts().filter((a) => a.id !== id);
     this.saveAccounts(list);
+
+    if (supabase) {
+      const query = target?.email
+        ? supabase.from('profiles').delete().eq('email', target.email.toLowerCase())
+        : supabase.from('profiles').delete().eq('id', ensureUuid(id));
+
+      query.then(({ error }) => {
+        if (error) console.warn('Supabase profile delete warning:', error.message);
+      });
+    }
   }
 
   // --- REGISTRASI MANDIRI POSYANDU (SELF-REGISTRATION & APPROVAL) ---
@@ -834,9 +907,22 @@ export class PosyanduStore {
     };
     this.addAccount(newAccount);
 
-    // 3. Sinkronisasi ke Supabase Auth jika terkonfigurasi
+    // 3. Sinkronisasi ke Supabase Profiles & Auth jika terkonfigurasi
     if (isSupabaseConfigured && supabase) {
       try {
+        const validTenantUuid = ensureUuid(newTenant.id);
+        supabase
+          .from('profiles')
+          .update({
+            posyandu_id: validTenantUuid,
+            posyandu: newTenant.nama,
+            role: 'admin_posyandu',
+          })
+          .eq('email', target.emailAdmin.toLowerCase())
+          .then(({ error: pErr }) => {
+            if (pErr) console.warn('Supabase profile update on approve warning:', pErr.message);
+          });
+
         supabase.auth.signUp({
           email: target.emailAdmin.toLowerCase(),
           password: target.passwordAdmin || '123456',
@@ -845,7 +931,7 @@ export class PosyanduStore {
               nama: newAccount.nama,
               role: 'admin_posyandu',
               posyandu: newTenant.nama,
-              posyandu_id: newTenant.id,
+              posyandu_id: validTenantUuid,
               no_hp: target.noWhatsapp,
             },
           },

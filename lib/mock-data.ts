@@ -797,23 +797,4 @@ export const INITIAL_MENU_MBG: MenuMBG[] = [
   },
 ];
 
-export const INITIAL_REGISTRATIONS: PosyanduRegistrationRequest[] = [
-  {
-    id: 'reg-cempaka-01',
-    namaPosyandu: 'Posyandu Cempaka',
-    puskesmas: 'UPTD Puskesmas Pembina',
-    kotaKab: 'Kota Palembang',
-    kecamatan: 'Kecamatan Sako',
-    kelurahan: 'Sukamaju',
-    rw: '07',
-    rt: '03',
-    alamat: 'Balai Pertemuan Warga RW 07, Jl. Cempaka Indah No. 21',
-    namaKetua: 'Ny. Nurhayati Hasanah',
-    noWhatsapp: '081377889900',
-    emailAdmin: 'admin.cempaka@posyandu.id',
-    passwordAdmin: '123456',
-    status: 'pending',
-    createdAt: '2026-11-08',
-    notes: 'Pengajuan pendaftaran mandiri unit posyandu RW 07.',
-  },
-];
+export const INITIAL_REGISTRATIONS: PosyanduRegistrationRequest[] = [];

@@ -94,6 +94,7 @@ export default function SuperAdminPosyanduPage() {
 
   useEffect(() => {
     loadData();
+    PosyanduStore.syncFromSupabase().then(() => loadData());
     window.addEventListener('posyandu_tenants_updated', loadData);
     window.addEventListener('posyandu_registrations_updated', loadData);
     return () => {

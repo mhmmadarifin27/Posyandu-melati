@@ -30,13 +30,33 @@ export default function SuperAdminPersetujuanPage() {
   const [registrations, setRegistrations] = useState<PosyanduRegistrationRequest[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState<'all' | 'pending' | 'approved' | 'rejected'>('all');
+  const [isSyncing, setIsSyncing] = useState(false);
 
   const loadData = () => {
     setRegistrations(PosyanduStore.getRegistrations());
   };
 
+  const handleSyncCloud = async (showNotification = false) => {
+    setIsSyncing(true);
+    try {
+      await PosyanduStore.syncFromSupabase();
+      loadData();
+      if (showNotification) {
+        toast.success(
+          'Sinkronisasi Berhasil',
+          'Data pendaftaran dari Supabase Cloud telah diperbarui.'
+        );
+      }
+    } catch (e) {
+      console.warn('Sync cloud error:', e);
+    } finally {
+      setIsSyncing(false);
+    }
+  };
+
   useEffect(() => {
     loadData();
+    handleSyncCloud(false);
     window.addEventListener('posyandu_registrations_updated', loadData);
     window.addEventListener('posyandu_tenants_updated', loadData);
     window.addEventListener('storage', loadData);
@@ -187,6 +207,16 @@ _Super Admin Puskesmas Pembina_`;
             </div>
 
             <div className="flex items-center gap-2.5 flex-wrap">
+              <button
+                type="button"
+                onClick={() => handleSyncCloud(true)}
+                disabled={isSyncing}
+                className="inline-flex items-center gap-2 px-4 py-3 rounded-2xl bg-white/15 hover:bg-white/25 border border-white/30 text-white font-bold text-xs uppercase tracking-wider shadow-sm transition-all hover:scale-102 active:scale-98 shrink-0 cursor-pointer disabled:opacity-50"
+                title="Tarik data pendaftaran terbaru dari Supabase Cloud"
+              >
+                <RotateCcw className={`w-4 h-4 ${isSyncing ? 'animate-spin' : ''}`} />
+                <span>{isSyncing ? 'Menyinkron...' : 'Sinkron Cloud'}</span>
+              </button>
               <Link
                 href="/super-admin/posyandu"
                 className="inline-flex items-center gap-2 px-5 py-3 rounded-2xl bg-white hover:bg-[#fff5f6] text-[#80000f] font-bold text-xs uppercase tracking-wider shadow-md hover:shadow-lg transition-all hover:scale-102 active:scale-98 shrink-0"
