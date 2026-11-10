@@ -59,6 +59,7 @@ export default function SuperAdminDashboardPage() {
 
   useEffect(() => {
     loadData();
+    PosyanduStore.syncFromSupabase().then(() => loadData());
 
     const handleUpdate = () => loadData();
     window.addEventListener('posyandu_tenants_updated', handleUpdate);
