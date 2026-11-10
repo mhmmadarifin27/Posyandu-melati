@@ -12,19 +12,20 @@ import {
   CheckCircle2,
   AlertCircle,
   Sparkles,
-  Info,
   Phone,
+  Building2,
 } from 'lucide-react';
 import Sidebar from '@/components/Sidebar';
 import Header from '@/components/Header';
-import { supabase, isSupabaseConfigured } from '@/lib/supabase';
-import { LandingStore } from '@/lib/landing-store';
+import { PosyanduStore, supabase, isSupabaseConfigured, ensureUuid } from '@/lib/supabase';
 import { toast } from '@/components/ui/custom-toast';
+import { UserRole } from '@/types/posyandu';
 
 export default function PengaturanAkunPage() {
-  const [activeRole, setActiveRole] = useState<'kader' | 'bidan'>('kader');
+  const [activeRole, setActiveRole] = useState<UserRole>('admin_posyandu');
   const [userEmail, setUserEmail] = useState('');
-  const [userName, setUserName] = useState('');
+  const [userId, setUserId] = useState('');
+  const [posyanduNama, setPosyanduNama] = useState('Posyandu Melati');
   const [isCloudAuth, setIsCloudAuth] = useState(false);
 
   // Form Edit Profil State (Nama, No HP, Jabatan)
@@ -40,71 +41,100 @@ export default function PengaturanAkunPage() {
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
+  // Muat data profil akun dari sesi aktif / pendaftaran terbaru
+  const loadAccountData = () => {
+    if (typeof window === 'undefined') return;
+
+    // 1. Ambil data dari sesi pengguna aktif (posyandu_auth_user)
+    const activeUser = PosyanduStore.getActiveUser();
+
+    // 2. Ambil data cadangan dari pendaftaran terbaru atau akun terdaftar
+    const registrations = PosyanduStore.getRegistrations();
+    const latestReg = registrations.length > 0 ? registrations[0] : null;
+    const accounts = PosyanduStore.getAccounts();
+
+    // Tentukan email aktif
+    const currentEmail =
+      activeUser?.email ||
+      latestReg?.emailAdmin ||
+      accounts[0]?.email ||
+      'admin@posyandu.id';
+
+    const matchedAccount = accounts.find(
+      (a) => a.email.toLowerCase() === currentEmail.toLowerCase()
+    );
+
+    // Tentukan nama posyandu
+    const currentPosyandu =
+      activeUser?.posyanduNama ||
+      activeUser?.posyandu ||
+      matchedAccount?.posyanduNama ||
+      matchedAccount?.posyandu ||
+      latestReg?.namaPosyandu ||
+      'Posyandu Melati';
+
+    // Tentukan nama pengguna
+    const currentNama =
+      activeUser?.nama ||
+      matchedAccount?.nama ||
+      (latestReg ? `Admin ${latestReg.namaPosyandu} (${latestReg.namaKetua})` : 'Admin Posyandu');
+
+    // Tentukan nomor HP / WhatsApp
+    const currentNoHp =
+      activeUser?.noHp ||
+      matchedAccount?.noHp ||
+      latestReg?.noWhatsapp ||
+      '';
+
+    // Tentukan peran & jabatan
+    const currentRole = activeUser?.role || matchedAccount?.role || 'admin_posyandu';
+    const currentJabatan =
+      activeUser?.jabatan ||
+      matchedAccount?.jabatan ||
+      `Ketua & Admin ${currentPosyandu}`;
+
+    setUserId(activeUser?.id || matchedAccount?.id || `usr-${Date.now()}`);
+    setUserEmail(currentEmail);
+    setNama(currentNama);
+    setNoHp(currentNoHp);
+    setJabatan(currentJabatan);
+    setPosyanduNama(currentPosyandu);
+    setActiveRole(currentRole);
+  };
+
   useEffect(() => {
-    if (typeof window !== 'undefined') {
-      const storedRole = localStorage.getItem('posyandu_active_role');
-      const role = storedRole === 'bidan' ? 'bidan' : 'kader';
-      setActiveRole(role);
+    loadAccountData();
 
-      // Muat profil dari posyandu_profiles jika tersedia
-      let savedProfiles: Record<string, any> = {};
-      try {
-        savedProfiles = JSON.parse(localStorage.getItem('posyandu_profiles') || '{}');
-      } catch {}
-
-      const roleProfile = savedProfiles[role];
-
-      const rawUser = localStorage.getItem('posyandu_auth_user');
-      let parsedUser: any = null;
-      if (rawUser) {
-        try {
-          parsedUser = JSON.parse(rawUser);
-        } catch {}
-      }
-
-      const emailVal = parsedUser?.email || (role === 'bidan' ? 'bidanmelati@gmail.com' : 'kadermelati@gmail.com');
-      setUserEmail(emailVal);
-
-      // Inisialisasi Nama, No HP, Jabatan
-      const schedule = LandingStore.getSchedule();
-      if (role === 'bidan') {
-        const initialNama = roleProfile?.nama || parsedUser?.nama || schedule.contactPersonName || 'Bdn. Siti Rahma, S.Tr.Keb';
-        const initialNoHp = roleProfile?.noHp || parsedUser?.noHp || schedule.contactWhatsapp || '081278901234';
-        const initialJabatan = roleProfile?.jabatan || parsedUser?.jabatan || 'Bidan Pembina Wilayah RW 03';
-        setNama(initialNama);
-        setNoHp(initialNoHp);
-        setJabatan(initialJabatan);
-        setUserName(initialNama);
-      } else {
-        let kaderContact: any = null;
-        try {
-          kaderContact = JSON.parse(localStorage.getItem('posyandu_kader_contact') || '{}');
-        } catch {}
-        const initialNama = roleProfile?.nama || kaderContact?.nama || parsedUser?.nama || 'Ny. Anisa Rahmawati';
-        const initialNoHp = roleProfile?.noHp || kaderContact?.noHp || parsedUser?.noHp || '081367895678';
-        const initialJabatan = roleProfile?.jabatan || kaderContact?.jabatan || parsedUser?.jabatan || 'Ketua Kader Posyandu Melati';
-        setNama(initialNama);
-        setNoHp(initialNoHp);
-        setJabatan(initialJabatan);
-        setUserName(initialNama);
-      }
-    }
-
-    // Periksa status sesi aktif Supabase
+    // Periksa status autentikasi Cloud Supabase
     if (isSupabaseConfigured && supabase) {
       supabase.auth.getUser().then(({ data }) => {
         if (data?.user) {
           setIsCloudAuth(true);
           if (data.user.email) setUserEmail(data.user.email);
+          const metaNama = data.user.user_metadata?.nama;
+          const metaNoHp = data.user.user_metadata?.no_hp;
+          const metaPosyandu = data.user.user_metadata?.posyandu;
+          if (metaNama && !nama) setNama(metaNama);
+          if (metaNoHp && !noHp) setNoHp(metaNoHp);
+          if (metaPosyandu && !posyanduNama) setPosyanduNama(metaPosyandu);
         }
       });
     }
+
+    const handleAuthChange = () => loadAccountData();
+    window.addEventListener('posyandu_auth_changed', handleAuthChange);
+    window.addEventListener('posyandu_accounts_updated', handleAuthChange);
+    return () => {
+      window.removeEventListener('posyandu_auth_changed', handleAuthChange);
+      window.removeEventListener('posyandu_accounts_updated', handleAuthChange);
+    };
   }, []);
 
-  const handleSaveProfile = (e: React.FormEvent) => {
+  // Simpan Perubahan Profil (Nama, No HP, Jabatan)
+  const handleSaveProfile = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!nama.trim() || !noHp.trim() || !jabatan.trim()) {
-      toast.warning('Data Belum Lengkap', 'Mohon lengkapi nama, nomor HP, dan jabatan Anda.');
+      toast.warning('Data Belum Lengkap', 'Mohon lengkapi nama, nomor WhatsApp, dan jabatan Anda.');
       return;
     }
 
@@ -120,51 +150,54 @@ export default function PengaturanAkunPage() {
 
         const updatedUser = {
           ...currentUser,
+          id: userId,
+          email: userEmail,
+          role: activeRole,
           nama: nama.trim(),
           noHp: noHp.trim(),
           jabatan: jabatan.trim(),
+          posyandu: posyanduNama,
+          posyanduNama: posyanduNama,
+          updatedAt: new Date().toISOString(),
         };
         localStorage.setItem('posyandu_auth_user', JSON.stringify(updatedUser));
 
-        // 2. Simpan ke posyandu_profiles
-        let profiles: Record<string, any> = {};
-        try {
-          profiles = JSON.parse(localStorage.getItem('posyandu_profiles') || '{}');
-        } catch {}
-        profiles[activeRole] = {
-          nama: nama.trim(),
-          noHp: noHp.trim(),
-          jabatan: jabatan.trim(),
-        };
-        localStorage.setItem('posyandu_profiles', JSON.stringify(profiles));
-
-        // 3. Integrasi ke Landing Page & Jadwal
-        if (activeRole === 'bidan') {
-          LandingStore.saveSchedule({
-            contactPersonName: nama.trim(),
-            contactWhatsapp: noHp.trim(),
+        // 2. Perbarui juga akun di PosyanduStore
+        const accounts = PosyanduStore.getAccounts();
+        const matched = accounts.find((a) => a.email.toLowerCase() === userEmail.toLowerCase());
+        if (matched) {
+          PosyanduStore.updateAccount({
+            ...matched,
+            nama: nama.trim(),
+            noHp: noHp.trim(),
+            jabatan: jabatan.trim(),
           });
-        } else {
-          localStorage.setItem(
-            'posyandu_kader_contact',
-            JSON.stringify({
-              nama: nama.trim(),
-              noHp: noHp.trim(),
-              jabatan: jabatan.trim(),
-            })
-          );
         }
 
-        setUserName(nama.trim());
+        // 3. Sinkronisasi ke Cloud Database Supabase jika terhubung
+        if (isSupabaseConfigured && supabase && userId) {
+          try {
+            await supabase.from('profiles').upsert({
+              id: ensureUuid(userId),
+              nama: nama.trim(),
+              email: userEmail.toLowerCase(),
+              role: activeRole,
+              posyandu: posyanduNama,
+              no_hp: noHp.trim(),
+            });
+          } catch (cloudErr) {
+            console.warn('Supabase profile cloud sync warning:', cloudErr);
+          }
+        }
 
-        // 4. Siarkan event sinkronisasi real-time
+        // Siarkan event pembaruan
         window.dispatchEvent(new Event('posyandu_profile_updated'));
-        window.dispatchEvent(new Event('posyandu_landing_updated'));
+        window.dispatchEvent(new Event('posyandu_accounts_updated'));
       }
 
       toast.success(
         'Profil Berhasil Diperbarui!',
-        'Nama, nomor WhatsApp, dan jabatan Anda telah disinkronkan ke Dashboard dan Landing Page.'
+        'Nama, nomor kontak, dan jabatan Anda telah tersimpan.'
       );
     } catch (err: any) {
       console.error('Save profile error:', err);
@@ -174,6 +207,7 @@ export default function PengaturanAkunPage() {
     }
   };
 
+  // Simpan Perubahan Kata Sandi
   const handleChangePassword = async (e: React.FormEvent) => {
     e.preventDefault();
 
@@ -190,32 +224,33 @@ export default function PengaturanAkunPage() {
     setIsSubmitting(true);
 
     try {
+      // 1. Perbarui di Supabase Auth jika sesi Cloud aktif
       if (isSupabaseConfigured && supabase) {
-        const { error } = await supabase.auth.updateUser({
-          password: newPassword,
-        });
-
-        if (error) {
-          console.error('Supabase update password error:', error.message);
-          toast.error('Gagal Memperbarui Sandi', error.message);
-          setIsSubmitting(false);
-          return;
+        try {
+          const { error } = await supabase.auth.updateUser({
+            password: newPassword,
+          });
+          if (error) {
+            console.warn('Supabase update password warning:', error.message);
+          }
+        } catch (e) {
+          console.warn('Supabase auth update exception:', e);
         }
-
-        toast.success(
-          'Kata Sandi Berhasil Diperbarui!',
-          'Kata sandi akun Anda telah diperbarui di Supabase Auth. Silakan gunakan sandi baru ini saat masuk kembali.'
-        );
-        setNewPassword('');
-        setConfirmPassword('');
-        setIsSubmitting(false);
-        return;
       }
 
-      // Mode Offline / Local Storage
+      // 2. Perbarui kata sandi di akun PosyanduStore
+      const accounts = PosyanduStore.getAccounts();
+      const matched = accounts.find((a) => a.email.toLowerCase() === userEmail.toLowerCase());
+      if (matched) {
+        PosyanduStore.updateAccount({
+          ...matched,
+          password: newPassword,
+        });
+      }
+
       toast.success(
-        'Kata Sandi Berhasil Disimpan',
-        'Kata sandi lokal akun Anda telah diperbarui.'
+        'Kata Sandi Berhasil Diperbarui!',
+        'Kata sandi akun Anda telah diperbarui. Gunakan kata sandi baru ini saat masuk berikutnya.'
       );
       setNewPassword('');
       setConfirmPassword('');
@@ -252,7 +287,7 @@ export default function PengaturanAkunPage() {
               <span>Pengaturan Akun &amp; Kata Sandi</span>
             </h1>
             <p className="text-xs sm:text-sm text-slate-500 mt-1">
-              Kelola informasi profil petugas dan perbarui kata sandi login untuk keamanan data Posyandu Melati RW 03.
+              Kelola informasi profil penanggung jawab dan perbarui kata sandi login untuk keamanan unit {posyanduNama}.
             </p>
           </div>
 
@@ -261,15 +296,15 @@ export default function PengaturanAkunPage() {
             <div className="lg:col-span-5 bg-white rounded-3xl p-6 sm:p-7 border border-[#fce1e4] shadow-xs space-y-6">
               <div className="flex items-center gap-3.5 pb-5 border-b border-[#fce1e4]">
                 <div className="w-14 h-14 rounded-2xl bg-[#fff0f2] border border-[#fce1e4] text-3xl flex items-center justify-center shrink-0 shadow-2xs">
-                  {activeRole === 'bidan' ? '👩‍⚕️' : '🧕'}
+                  {activeRole === 'super_admin' ? '🏛️' : '🧕'}
                 </div>
                 <div className="overflow-hidden">
                   <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-extrabold uppercase tracking-wide bg-[#fff0f2] text-[#80000f] border border-[#fce1e4] mb-1">
                     <ShieldCheck className="w-3 h-3" />
-                    {activeRole === 'bidan' ? 'Bidan Desa (Supervisi)' : 'Kader Posyandu (Operasional)'}
+                    {activeRole === 'super_admin' ? 'Super Admin Puskesmas' : `Admin ${posyanduNama}`}
                   </span>
                   <h3 className="font-serif text-base font-bold text-slate-900 truncate">
-                    {nama || userName}
+                    {nama || 'Admin Posyandu'}
                   </h3>
                   <p className="text-xs text-slate-500 font-medium truncate">
                     {userEmail}
@@ -279,16 +314,17 @@ export default function PengaturanAkunPage() {
 
               {/* Formulir Pengeditan Profil */}
               <form onSubmit={handleSaveProfile} className="space-y-4 text-xs">
+                {/* Nama Lengkap */}
                 <div>
                   <label className="block text-xs font-bold uppercase tracking-wider text-slate-700 mb-1.5">
-                    Nama Lengkap &amp; Gelar
+                    Nama Lengkap / Penanggung Jawab
                   </label>
                   <div className="relative">
                     <input
                       type="text"
                       value={nama}
                       onChange={(e) => setNama(e.target.value)}
-                      placeholder="Contoh: Bdn. Siti Rahma, S.Tr.Keb"
+                      placeholder="Contoh: Ny. Anisa Rahmawati"
                       required
                       className="w-full px-3.5 py-2.5 pl-9 rounded-xl border border-[#fce1e4] text-xs font-medium focus:ring-2 focus:ring-[#80000f]/20 focus:border-[#80000f] focus:outline-none transition-colors"
                     />
@@ -296,16 +332,33 @@ export default function PengaturanAkunPage() {
                   </div>
                 </div>
 
+                {/* Unit Posyandu */}
                 <div>
                   <label className="block text-xs font-bold uppercase tracking-wider text-slate-700 mb-1.5">
-                    Nomor WhatsApp / HP Siaga
+                    Unit Posyandu Terdaftar
+                  </label>
+                  <div className="relative">
+                    <input
+                      type="text"
+                      value={posyanduNama}
+                      disabled
+                      className="w-full px-3.5 py-2.5 pl-9 rounded-xl border border-slate-200 bg-slate-100 text-xs font-bold text-slate-600 cursor-not-allowed"
+                    />
+                    <Building2 className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
+                  </div>
+                </div>
+
+                {/* Nomor WhatsApp */}
+                <div>
+                  <label className="block text-xs font-bold uppercase tracking-wider text-slate-700 mb-1.5">
+                    Nomor WhatsApp / Kontak Aktif
                   </label>
                   <div className="relative">
                     <input
                       type="text"
                       value={noHp}
                       onChange={(e) => setNoHp(e.target.value)}
-                      placeholder="Contoh: 6281278901234 atau 081278901234"
+                      placeholder="Contoh: 081367895678"
                       required
                       className="w-full px-3.5 py-2.5 pl-9 rounded-xl border border-[#fce1e4] text-xs font-medium focus:ring-2 focus:ring-[#80000f]/20 focus:border-[#80000f] focus:outline-none transition-colors"
                     />
@@ -313,6 +366,7 @@ export default function PengaturanAkunPage() {
                   </div>
                 </div>
 
+                {/* Jabatan */}
                 <div>
                   <label className="block text-xs font-bold uppercase tracking-wider text-slate-700 mb-1.5">
                     Jabatan / Wilayah Tugas
@@ -322,7 +376,7 @@ export default function PengaturanAkunPage() {
                       type="text"
                       value={jabatan}
                       onChange={(e) => setJabatan(e.target.value)}
-                      placeholder="Contoh: Ketua Kader Posyandu Melati atau Bidan Pembina Wilayah"
+                      placeholder="Contoh: Ketua & Admin Posyandu"
                       required
                       className="w-full px-3.5 py-2.5 pl-9 rounded-xl border border-[#fce1e4] text-xs font-medium focus:ring-2 focus:ring-[#80000f]/20 focus:border-[#80000f] focus:outline-none transition-colors"
                     />
@@ -330,6 +384,7 @@ export default function PengaturanAkunPage() {
                   </div>
                 </div>
 
+                {/* Email Login */}
                 <div>
                   <label className="block text-xs font-bold uppercase tracking-wider text-slate-700 mb-1.5">
                     Email Akun Terdaftar

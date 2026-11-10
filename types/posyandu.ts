@@ -1,4 +1,84 @@
-export type UserRole = 'petugas' | 'bidan' | 'kader' | 'warga';
+export type UserRole = 'super_admin' | 'admin_posyandu' | 'petugas' | 'bidan' | 'kader' | 'warga';
+
+export interface PosyanduTenant {
+  id: string;
+  kode: string;
+  nama: string;
+  logo?: string; // Logo kustom (Base64 atau URL gambar)
+  pemerintahDaerah?: string; // Contoh: Pemerintah Kota Palembang / Pemerintah Kab. Bandung
+  dinasKesehatan?: string; // Contoh: Dinas Kesehatan Kota Palembang
+  puskesmas: string; // Contoh: UPTD Puskesmas Pembina
+  provinsi?: string;
+  kotaKab?: string;
+  kecamatan?: string;
+  kelurahan: string;
+  rw: string;
+  rt?: string;
+  alamat: string;
+  kodePos?: string;
+  namaKetua: string;
+  namaBidan?: string;
+  noHp: string;
+  email?: string;
+  totalBalita?: number;
+  totalBumil?: number;
+  totalLansia?: number;
+  status?: 'pending' | 'approved' | 'rejected';
+  createdAt: string;
+}
+
+export interface PosyanduKopConfig {
+  pemerintahDaerah: string;
+  dinasKesehatan: string;
+  puskesmas: string;
+  namaPosyandu: string;
+  alamat: string;
+  kontak: string;
+  logoPosyandu?: string;
+  namaKetua: string;
+  namaBidan: string;
+  nipBidan?: string;
+}
+
+export interface PosyanduRegistrationRequest {
+  id: string;
+  namaPosyandu: string;
+  strataPosyandu?: 'Pratama' | 'Madya' | 'Purnama' | 'Mandiri';
+  logoUrl?: string; // Base64 data atau URL logo khusus posyandu untuk KOP surat
+  noRegistrasi?: string;
+  puskesmas: string;
+  provinsi?: string;
+  kotaKab: string;
+  kecamatan: string;
+  kelurahan: string;
+  rw: string;
+  rt?: string;
+  alamat: string;
+  kodePos?: string;
+  namaKetua: string;
+  nikKetua?: string;
+  noWhatsapp: string;
+  emailAdmin: string;
+  passwordAdmin: string;
+  status: 'pending' | 'approved' | 'rejected';
+  createdAt: string;
+  approvedAt?: string;
+  notes?: string;
+}
+
+export interface UserProfile {
+  id: string;
+  nama: string;
+  email: string;
+  role: UserRole;
+  posyanduId?: string;
+  posyanduNama?: string;
+  posyandu?: string;
+  jabatan?: string;
+  noHp?: string;
+  status?: 'pending' | 'approved' | 'rejected';
+  createdAt?: string;
+}
 
 export type Gender = 'L' | 'P';
 

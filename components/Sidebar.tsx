@@ -29,8 +29,13 @@ import {
   X,
   ChevronRight,
   ChevronUp,
+  Building2,
+  Users,
+  ShieldCheck,
+  ClipboardCheck,
 } from 'lucide-react';
 import { toast } from '@/components/ui/custom-toast';
+import { PosyanduStore } from '@/lib/supabase';
 
 interface SidebarProps {
   className?: string;
@@ -38,61 +43,68 @@ interface SidebarProps {
 
 export default function Sidebar({ className = '' }: SidebarProps) {
   const pathname = usePathname();
-  const [collapsed, setCollapsed] = useState<boolean>(() => {
-    if (typeof window !== 'undefined') {
-      return localStorage.getItem('posyandu_sidebar_collapsed') === 'true';
-    }
-    return false;
-  });
+  const isSuperPath = Boolean(pathname?.startsWith('/super-admin'));
+
+  // SSR-safe deterministic initial states to prevent any React hydration mismatch
+  const [collapsed, setCollapsed] = useState<boolean>(false);
   const [mounted, setMounted] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
-  const [activeRole, setActiveRole] = useState<'bidan' | 'kader'>(() => {
-    if (typeof window !== 'undefined') {
-      const saved = localStorage.getItem('posyandu_active_role');
-      if (saved === 'kader' || saved === 'bidan') return saved;
-      const auth = localStorage.getItem('posyandu_auth_user');
-      if (auth) {
-        try {
-          const parsed = JSON.parse(auth);
-          if (parsed.role === 'kader' || parsed.role === 'bidan') return parsed.role;
-        } catch {}
-      }
-    }
-    return 'kader';
-  });
+  const [isSuperAdmin, setIsSuperAdmin] = useState<boolean>(isSuperPath);
+  const [tenantName, setTenantName] = useState<string>(isSuperPath ? 'Puskesmas Pembina' : 'Posyandu Melati');
 
   // Profile & Popover State
-  const [profileName, setProfileName] = useState('');
-  const [profileJabatan, setProfileJabatan] = useState('');
+  const [profileName, setProfileName] = useState<string>(
+    isSuperPath ? 'Dr. Hendra Gunawan, M.Kes' : 'Admin Posyandu'
+  );
+  const [profileJabatan, setProfileJabatan] = useState<string>(
+    isSuperPath ? 'SaaS Super Admin • Puskesmas Pembina' : 'Admin Pengelola Posyandu'
+  );
   const [showProfileMenu, setShowProfileMenu] = useState(false);
   const desktopFooterRef = useRef<HTMLDivElement>(null);
 
-  // Synchronize profile data and listen to updates
+  // Synchronize user profile & tenant data strictly in useEffect (after hydration)
   useEffect(() => {
+    setMounted(true);
+
+    const savedCollapsed = localStorage.getItem('posyandu_sidebar_collapsed');
+    if (savedCollapsed !== null) {
+      setCollapsed(savedCollapsed === 'true');
+    }
+
     const syncProfile = () => {
-      if (typeof window !== 'undefined') {
-        let profiles: Record<string, any> = {};
-        try {
-          profiles = JSON.parse(localStorage.getItem('posyandu_profiles') || '{}');
-        } catch {}
+      let authUser: any = null;
+      try {
+        authUser = JSON.parse(localStorage.getItem('posyandu_auth_user') || '{}');
+      } catch {}
 
-        let authUser: any = null;
-        try {
-          authUser = JSON.parse(localStorage.getItem('posyandu_auth_user') || '{}');
-        } catch {}
+      const isPathSuper = Boolean(pathname?.startsWith('/super-admin'));
+      const isUserSuper = authUser?.role === 'super_admin';
+      const isSuper = isPathSuper || isUserSuper;
+      setIsSuperAdmin(isSuper);
 
-        const current = activeRole === 'bidan' ? profiles.bidan : profiles.kader;
-        const nameVal =
-          current?.nama ||
-          authUser?.nama ||
-          (activeRole === 'bidan' ? 'Bdn. Siti Rahma, S.Tr.Keb' : 'Ny. Anisa Rahmawati');
-        const jabatanVal =
-          current?.jabatan ||
-          authUser?.jabatan ||
-          (activeRole === 'bidan' ? 'Bidan Pembina Wilayah RW 03' : 'Ketua Kader Posyandu Melati');
-        setProfileName(nameVal);
-        setProfileJabatan(jabatanVal);
+      // Sinkronisasi cookie otentikasi jika belum tersimpan di browser
+      if (typeof document !== 'undefined' && authUser?.role) {
+        if (!document.cookie.includes('posyandu_auth_role=')) {
+          document.cookie = `posyandu_auth_role=${authUser.role}; path=/; max-age=86400; SameSite=Lax`;
+          if (authUser.email) {
+            document.cookie = `posyandu_auth_email=${encodeURIComponent(authUser.email)}; path=/; max-age=86400; SameSite=Lax`;
+          }
+        }
       }
+
+      const posyanduVal =
+        authUser?.posyanduNama ||
+        authUser?.posyandu ||
+        (isSuper ? 'Puskesmas Pembina' : 'Posyandu Melati');
+      setTenantName(posyanduVal);
+
+      const nameVal =
+        authUser?.nama || (isSuper ? 'Dr. Hendra Gunawan, M.Kes' : 'Admin Posyandu');
+      const jabatanVal =
+        authUser?.jabatan ||
+        (isSuper ? 'SaaS Super Admin • Puskesmas Pembina' : `Admin Pengelola ${posyanduVal}`);
+      setProfileName(nameVal);
+      setProfileJabatan(jabatanVal);
     };
 
     syncProfile();
@@ -115,29 +127,7 @@ export default function Sidebar({ className = '' }: SidebarProps) {
       window.removeEventListener('posyandu_profile_updated', syncProfile);
       window.removeEventListener('storage', syncProfile);
     };
-  }, [activeRole]);
-
-  // Synchronize collapsed state & active role with localStorage
-  useEffect(() => {
-    setMounted(true);
-    const saved = localStorage.getItem('posyandu_sidebar_collapsed');
-    if (saved !== null) {
-      setCollapsed(saved === 'true');
-    }
-    const savedRole = localStorage.getItem('posyandu_active_role');
-    if (savedRole === 'kader' || savedRole === 'bidan') {
-      setActiveRole(savedRole);
-    }
-
-    const handleRoleUpdate = () => {
-      const updated = localStorage.getItem('posyandu_active_role');
-      if (updated === 'kader' || updated === 'bidan') {
-        setActiveRole(updated);
-      }
-    };
-    window.addEventListener('storage', handleRoleUpdate);
-    return () => window.removeEventListener('storage', handleRoleUpdate);
-  }, []);
+  }, [pathname]);
 
   // Listen to mobile toggle event from Header
   useEffect(() => {
@@ -168,12 +158,18 @@ export default function Sidebar({ className = '' }: SidebarProps) {
   const handleLogout = () => {
     toast.confirm({
       title: 'Konfirmasi Keluar',
-      description: 'Apakah Anda yakin ingin keluar dari sistem Posyandu Melati?',
+      description: 'Apakah Anda yakin ingin keluar dari sistem Posyandu?',
       confirmText: 'Ya, Keluar',
       cancelText: 'Batal',
       type: 'danger',
       onConfirm: () => {
         localStorage.removeItem('posyandu_auth_user');
+        localStorage.removeItem('posyandu_active_role');
+        // Bersihkan session cookie Next.js middleware
+        document.cookie = 'posyandu_auth_role=; path=/; max-age=0';
+        document.cookie = 'posyandu_auth_email=; path=/; max-age=0';
+        document.cookie = 'posyandu_auth_tenant=; path=/; max-age=0';
+
         toast.success('Berhasil Logout', 'Sesi kerja Anda telah diakhiri.');
         setTimeout(() => {
           window.location.href = '/login';
@@ -182,7 +178,79 @@ export default function Sidebar({ className = '' }: SidebarProps) {
     });
   };
 
-  const mainNav = [
+  const [pendingCount, setPendingCount] = useState<number>(0);
+  const [activeTenantCount, setActiveTenantCount] = useState<number>(0);
+
+  useEffect(() => {
+    const updateStats = () => {
+      try {
+        const regs = PosyanduStore.getRegistrations();
+        const pending = regs.filter((r) => r.status === 'pending').length;
+        setPendingCount(pending);
+        const tenants = PosyanduStore.getPosyanduList();
+        setActiveTenantCount(tenants.length);
+      } catch {}
+    };
+
+    updateStats();
+    window.addEventListener('storage', updateStats);
+    window.addEventListener('posyandu_registrations_updated', updateStats);
+    window.addEventListener('posyandu_tenants_updated', updateStats);
+    window.addEventListener('posyandu_list_updated', updateStats);
+
+    return () => {
+      window.removeEventListener('storage', updateStats);
+      window.removeEventListener('posyandu_registrations_updated', updateStats);
+      window.removeEventListener('posyandu_tenants_updated', updateStats);
+      window.removeEventListener('posyandu_list_updated', updateStats);
+    };
+  }, []);
+
+  const isItemActive = (href: string) => {
+    return pathname === href;
+  };
+
+  const superAdminNav = [
+    {
+      name: 'Dashboard Supervisi',
+      href: '/super-admin/dashboard',
+      icon: <LayoutDashboard className="w-4 h-4 shrink-0" />,
+      badge: null,
+    },
+    {
+      name: 'Master Unit Posyandu',
+      href: '/super-admin/posyandu',
+      icon: <Building2 className="w-4 h-4 shrink-0" />,
+      badge:
+        pendingCount > 0 ? (
+          <span className="px-1.5 py-0.5 rounded-full bg-[#80000f] text-white text-[9.5px] font-black uppercase shadow-xs animate-pulse">
+            {pendingCount} ACC Baru
+          </span>
+        ) : (
+          <span className="px-1.5 py-0.5 rounded-full bg-[#fff0f2] text-[#80000f] text-[9.5px] font-black uppercase border border-[#fce1e4]">
+            {activeTenantCount} Unit
+          </span>
+        ),
+    },
+    {
+      name: 'Audit Rekapitulasi Wilayah',
+      href: '/super-admin/rekapitulasi',
+      icon: <LineChart className="w-4 h-4 shrink-0" />,
+      badge: (
+        <span className="px-1.5 py-0.5 rounded-full bg-emerald-100 text-emerald-800 text-[9.5px] font-black uppercase border border-emerald-200">
+          Semua
+        </span>
+      ),
+    },
+    {
+      name: 'Kelola Landing Page',
+      href: '/super-admin/kelola-landing',
+      icon: <PanelsTopLeft className="w-4 h-4 shrink-0" />,
+      badge: null,
+    },
+  ];
+
+  const adminPosyanduMainNav = [
     {
       name: 'Dashboard Overview',
       href: '/dashboard',
@@ -207,7 +275,7 @@ export default function Sidebar({ className = '' }: SidebarProps) {
     },
   ];
 
-  const dataNav = [
+  const adminPosyanduDataNav = [
     {
       name: 'Balita & Timbang Rutin',
       href: '/balita',
@@ -224,17 +292,9 @@ export default function Sidebar({ className = '' }: SidebarProps) {
       icon: <Activity className="w-4 h-4 shrink-0" />,
     },
     {
-      name: 'Laporan Puskesmas',
+      name: 'Laporan Posyandu',
       href: '/laporan',
       icon: <FileSpreadsheet className="w-4 h-4 shrink-0" />,
-    },
-  ];
-
-  const landingNav = [
-    {
-      name: 'Kelola Landing Page',
-      href: '/kelola-landing',
-      icon: <PanelsTopLeft className="w-4 h-4 shrink-0" />,
     },
   ];
 
@@ -245,17 +305,6 @@ export default function Sidebar({ className = '' }: SidebarProps) {
       icon: <KeyRound className="w-4 h-4 shrink-0" />,
     },
   ];
-
-  // Saring menu sesuai wewenang: Kader fokus operasional (MBG SAW & Laporan Puskesmas khusus Bidan)
-  const filteredMainNav = mainNav.filter((item) => {
-    if (activeRole === 'kader' && item.href === '/rekomendasi-mbg') return false;
-    return true;
-  });
-
-  const filteredDataNav = dataNav.filter((item) => {
-    if (activeRole === 'kader' && item.href === '/laporan') return false;
-    return true;
-  });
 
   const sidebarTokens = {
     '--background': '#ffffff',
@@ -285,7 +334,7 @@ export default function Sidebar({ className = '' }: SidebarProps) {
           collapsedWidth={68}
           className="border-r border-[#fce1e4] bg-white shadow-xs"
         >
-          {/* Header Brand (Tinggi h-[72px] presisi menyamai Top Header) */}
+          {/* Header Brand */}
           <SidebarHeader className="h-[72px] shrink-0 border-b border-[#fce1e4] px-3.5 bg-white flex items-center">
             {collapsed ? (
               <div className="w-full flex items-center justify-center">
@@ -298,21 +347,33 @@ export default function Sidebar({ className = '' }: SidebarProps) {
               <div className="flex items-center justify-between w-full">
                 <div
                   className="flex items-center gap-2.5 overflow-hidden select-none"
-                  title="Posyandu Melati RW 03"
+                  title={isSuperAdmin ? 'Puskesmas Pembina (Super Admin)' : tenantName}
                 >
-                  <div className="relative w-8 h-8 rounded-xl bg-[#fff0f2] border border-[#fce1e4] flex items-center justify-center p-1 shrink-0 shadow-2xs">
-                    <img
-                      src="/images/logo-posyandu.png"
-                      alt="Logo Posyandu Melati"
-                      className="w-full h-full object-contain"
-                    />
+                  <div
+                    className="relative w-8 h-8 rounded-xl bg-[#fff0f2] border-[#fce1e4] border flex items-center justify-center p-1 shrink-0 shadow-2xs"
+                  >
+                    {isSuperAdmin ? (
+                      <span className="text-sm">👑</span>
+                    ) : (
+                      <img
+                        src="/images/logo-posyandugo-maroon.png"
+                        alt="Logo Posyandu"
+                        className="w-full h-full object-contain"
+                      />
+                    )}
                   </div>
                   <div className="flex flex-col text-left overflow-hidden">
                     <span className="font-serif font-black text-xs tracking-wider text-slate-900 uppercase truncate">
-                      POSYANDU <span className="text-[#80000f]">MELATI</span>
+                      {isSuperAdmin ? (
+                        <>
+                          PUSKESMAS <span className="text-[#80000f]">PEMBINA</span>
+                        </>
+                      ) : (
+                        <span>{tenantName.toUpperCase()}</span>
+                      )}
                     </span>
                     <span className="text-[10px] text-slate-500 font-bold truncate">
-                      RW 03 Sukamaju
+                      {isSuperAdmin ? '👑 SaaS Super Admin' : 'Admin Posyandu Terpadu'}
                     </span>
                   </div>
                 </div>
@@ -326,69 +387,21 @@ export default function Sidebar({ className = '' }: SidebarProps) {
 
           {/* Navigation Links */}
           <SidebarNav className="p-2 space-y-4 overflow-y-auto">
-            {/* Section 1: Menu Utama */}
-            <SidebarSection label="Menu Pelayanan">
-              {filteredMainNav.map((item) => {
-                const isActive = pathname === item.href;
-                return (
-                  <SidebarItem
-                    key={item.href}
-                    icon={item.icon}
-                    href={item.href}
-                    badge={!collapsed ? item.badge : null}
-                    active={isActive}
-                    className={`transition-all text-xs font-semibold rounded-xl ${
-                      isActive
-                        ? '!bg-[#80000f] !text-white font-bold shadow-md shadow-[#80000f]/25 [&_[data-slot=sidebar-item-icon]]:!text-white'
-                        : '!text-slate-600 hover:!bg-[#fff5f6] hover:!text-[#80000f] [&_[data-slot=sidebar-item-icon]]:!text-[#80000f] group-hover/sidebar-item:[&_[data-slot=sidebar-item-icon]]:!text-[#80000f]'
-                    }`}
-                  >
-                    {item.name}
-                  </SidebarItem>
-                );
-              })}
-            </SidebarSection>
-
-            {/* Section 2: Data Sasaran & Pelayanan */}
-            <SidebarSection label="Data Sasaran Posyandu">
-              {filteredDataNav.map((item) => {
-                const isActive = pathname === item.href;
-                return (
-                  <SidebarItem
-                    key={item.href}
-                    icon={item.icon}
-                    href={item.href}
-                    active={isActive}
-                    className={`transition-all text-xs font-semibold rounded-xl ${
-                      isActive
-                        ? '!bg-[#80000f] !text-white font-bold shadow-md shadow-[#80000f]/25 [&_[data-slot=sidebar-item-icon]]:!text-white'
-                        : '!text-slate-600 hover:!bg-[#fff5f6] hover:!text-[#80000f] [&_[data-slot=sidebar-item-icon]]:!text-[#80000f] group-hover/sidebar-item:[&_[data-slot=sidebar-item-icon]]:!text-[#80000f]'
-                    }`}
-                  >
-                    {item.name}
-                  </SidebarItem>
-                );
-              })}
-            </SidebarSection>
-
-            {/* Section 3: Kelola Landing Page (Khusus Kader, disembunyikan untuk Bidan) */}
-            {activeRole === 'kader' && (
-              <SidebarSection label="Kelola Landing Page">
-                {landingNav.map((item) => {
-                  const isActive =
-                    pathname === item.href ||
-                    pathname === '/kelola-jadwal' ||
-                    pathname === '/kelola-galeri';
+            {isSuperAdmin ? (
+              <SidebarSection label="Portal Super Admin">
+                {superAdminNav.map((item) => {
+                  const isActive = isItemActive(item.href);
                   return (
                     <SidebarItem
                       key={item.href}
                       icon={item.icon}
                       href={item.href}
+                      badge={!collapsed ? item.badge : null}
                       active={isActive}
                       className={`transition-all text-xs font-semibold rounded-xl ${
                         isActive
                           ? '!bg-[#80000f] !text-white font-bold shadow-md shadow-[#80000f]/25 [&_[data-slot=sidebar-item-icon]]:!text-white'
-                          : '!text-slate-600 hover:!bg-[#fff5f6] hover:!text-[#80000f] [&_[data-slot=sidebar-item-icon]]:!text-[#80000f] group-hover/sidebar-item:[&_[data-slot=sidebar-item-icon]]:!text-[#80000f]'
+                          : '!text-slate-600 hover:!bg-[#fff5f6] hover:!text-[#80000f] [&_[data-slot=sidebar-item-icon]]:!text-[#80000f]'
                       }`}
                     >
                       {item.name}
@@ -396,9 +409,56 @@ export default function Sidebar({ className = '' }: SidebarProps) {
                   );
                 })}
               </SidebarSection>
+            ) : (
+              <>
+                {/* Section 1: Menu Utama Posyandu */}
+                <SidebarSection label="Menu Pelayanan">
+                  {adminPosyanduMainNav.map((item) => {
+                    const isActive = pathname === item.href;
+                    return (
+                      <SidebarItem
+                        key={item.href}
+                        icon={item.icon}
+                        href={item.href}
+                        badge={!collapsed ? item.badge : null}
+                        active={isActive}
+                        className={`transition-all text-xs font-semibold rounded-xl ${
+                          isActive
+                            ? '!bg-[#80000f] !text-white font-bold shadow-md shadow-[#80000f]/25 [&_[data-slot=sidebar-item-icon]]:!text-white'
+                            : '!text-slate-600 hover:!bg-[#fff5f6] hover:!text-[#80000f] [&_[data-slot=sidebar-item-icon]]:!text-[#80000f]'
+                        }`}
+                      >
+                        {item.name}
+                      </SidebarItem>
+                    );
+                  })}
+                </SidebarSection>
+
+                {/* Section 2: Data Sasaran & Pelayanan Posyandu */}
+                <SidebarSection label="Data Sasaran Posyandu">
+                  {adminPosyanduDataNav.map((item) => {
+                    const isActive = pathname === item.href;
+                    return (
+                      <SidebarItem
+                        key={item.href}
+                        icon={item.icon}
+                        href={item.href}
+                        active={isActive}
+                        className={`transition-all text-xs font-semibold rounded-xl ${
+                          isActive
+                            ? '!bg-[#80000f] !text-white font-bold shadow-md shadow-[#80000f]/25 [&_[data-slot=sidebar-item-icon]]:!text-white'
+                            : '!text-slate-600 hover:!bg-[#fff5f6] hover:!text-[#80000f] [&_[data-slot=sidebar-item-icon]]:!text-[#80000f]'
+                        }`}
+                      >
+                        {item.name}
+                      </SidebarItem>
+                    );
+                  })}
+                </SidebarSection>
+              </>
             )}
 
-            {/* Section 4: Pengaturan Akun (Kader & Bidan) */}
+            {/* Section Pengaturan Akun */}
             <SidebarSection label="Pengaturan Akun">
               {accountNav.map((item) => {
                 const isActive = pathname === item.href;
@@ -411,7 +471,7 @@ export default function Sidebar({ className = '' }: SidebarProps) {
                     className={`transition-all text-xs font-semibold rounded-xl ${
                       isActive
                         ? '!bg-[#80000f] !text-white font-bold shadow-md shadow-[#80000f]/25 [&_[data-slot=sidebar-item-icon]]:!text-white'
-                        : '!text-slate-600 hover:!bg-[#fff5f6] hover:!text-[#80000f] [&_[data-slot=sidebar-item-icon]]:!text-[#80000f] group-hover/sidebar-item:[&_[data-slot=sidebar-item-icon]]:!text-[#80000f]'
+                        : '!text-slate-600 hover:!bg-[#fff5f6] hover:!text-[#80000f] [&_[data-slot=sidebar-item-icon]]:!text-[#80000f]'
                     }`}
                   >
                     {item.name}
@@ -428,10 +488,10 @@ export default function Sidebar({ className = '' }: SidebarProps) {
                 <button
                   type="button"
                   onClick={() => setShowProfileMenu(!showProfileMenu)}
-                  className="h-9 w-9 rounded-xl bg-[#80000f] text-white font-black text-xs flex items-center justify-center shrink-0 shadow-sm shadow-[#80000f]/25 cursor-pointer hover:scale-105 transition-transform"
+                  className="h-9 w-9 rounded-xl bg-[#80000f] text-white font-black text-xs flex items-center justify-center shrink-0 shadow-sm cursor-pointer hover:scale-105 transition-transform"
                   title="Klik untuk membuka menu akun & logout"
                 >
-                  {activeRole === 'bidan' ? '👩‍⚕️' : '🧕'}
+                  {isSuperAdmin ? '👑' : '🏥'}
                 </button>
 
                 {/* Flyout Popover untuk Collapsed Sidebar */}
@@ -439,14 +499,10 @@ export default function Sidebar({ className = '' }: SidebarProps) {
                   <div className="absolute left-[calc(100%+12px)] bottom-0 w-52 bg-white rounded-2xl border border-[#fce1e4] shadow-2xl p-2.5 z-50 animate-in fade-in zoom-in-95 space-y-1">
                     <div className="px-2.5 py-1.5 border-b border-[#fce1e4]/70 mb-1">
                       <p className="text-[10px] font-extrabold uppercase tracking-wider text-[#80000f]">
-                        {activeRole === 'bidan' ? 'Bidan Desa' : 'Kader Posyandu'}
+                        {isSuperAdmin ? 'Super Admin Puskesmas' : 'Admin Posyandu'}
                       </p>
-                      <p className="text-xs font-bold text-slate-900 truncate">
-                        {profileName}
-                      </p>
-                      <p className="text-[10px] text-slate-500 truncate">
-                        {profileJabatan}
-                      </p>
+                      <p className="text-xs font-bold text-slate-900 truncate">{profileName}</p>
+                      <p className="text-[10px] text-slate-500 truncate">{profileJabatan}</p>
                     </div>
 
                     <Link
@@ -479,7 +535,7 @@ export default function Sidebar({ className = '' }: SidebarProps) {
                   <div className="absolute bottom-[calc(100%+8px)] left-0 right-0 bg-white rounded-2xl border border-[#fce1e4] shadow-2xl p-2 z-50 animate-in fade-in zoom-in-95 space-y-1">
                     <div className="px-3 py-2 border-b border-[#fce1e4]/70 mb-1">
                       <p className="text-[10px] font-extrabold uppercase tracking-wider text-[#80000f]">
-                        {activeRole === 'bidan' ? 'Akun Bidan Desa' : 'Akun Kader Posyandu'}
+                        {isSuperAdmin ? '👑 Super Admin Puskesmas' : '🏥 Admin Posyandu'}
                       </p>
                       <p className="text-xs font-bold text-slate-900 truncate">
                         {profileName}
@@ -520,8 +576,10 @@ export default function Sidebar({ className = '' }: SidebarProps) {
                   title="Klik untuk membuka menu profil & logout"
                 >
                   <div className="flex items-center gap-2.5 overflow-hidden">
-                    <div className="h-8 w-8 rounded-xl bg-[#80000f] text-white font-black text-xs flex items-center justify-center shrink-0 shadow-sm shadow-[#80000f]/25">
-                      {activeRole === 'bidan' ? '👩‍⚕️' : '🧕'}
+                    <div
+                      className="h-8 w-8 rounded-xl bg-[#80000f] text-white font-black text-xs flex items-center justify-center shrink-0 shadow-sm"
+                    >
+                      {isSuperAdmin ? '👑' : '🏥'}
                     </div>
                     <div className="overflow-hidden">
                       <p className="text-xs font-bold text-slate-900 truncate group-hover:text-[#80000f] transition-colors">
@@ -571,18 +629,32 @@ export default function Sidebar({ className = '' }: SidebarProps) {
               {/* Mobile Header with Close Button */}
               <div className="p-4 border-b border-[#fce1e4] flex items-center justify-between bg-white">
                 <div className="flex items-center gap-3">
-                  <div className="w-9 h-9 rounded-xl bg-[#fff0f2] border border-[#fce1e4] flex items-center justify-center p-1.5 shadow-xs">
-                    <img
-                      src="/images/logo-posyandu.png"
-                      alt="Logo Posyandu"
-                      className="w-full h-full object-contain"
-                    />
+                  <div
+                    className="w-9 h-9 rounded-xl bg-[#fff0f2] border-[#fce1e4] border flex items-center justify-center p-1.5 shadow-xs"
+                  >
+                    {isSuperAdmin ? (
+                      <span className="text-sm">👑</span>
+                    ) : (
+                      <img
+                        src="/images/logo-posyandugo-maroon.png"
+                        alt="Logo Posyandu"
+                        className="w-full h-full object-contain"
+                      />
+                    )}
                   </div>
                   <div>
                     <h3 className="font-serif font-black text-xs text-slate-900 uppercase">
-                      POSYANDU <span className="text-[#80000f]">MELATI</span>
+                      {isSuperAdmin ? (
+                        <>
+                          PUSKESMAS <span className="text-[#80000f]">PEMBINA</span>
+                        </>
+                      ) : (
+                        tenantName.toUpperCase()
+                      )}
                     </h3>
-                    <p className="text-[10px] text-slate-500 font-semibold">RW 03 Sukamaju</p>
+                    <p className="text-[10px] text-slate-500 font-semibold">
+                      {isSuperAdmin ? '👑 SaaS Super Admin' : 'Admin Posyandu Terpadu'}
+                    </p>
                   </div>
                 </div>
 
@@ -598,82 +670,14 @@ export default function Sidebar({ className = '' }: SidebarProps) {
 
               {/* Scrollable Navigation */}
               <div className="flex-1 overflow-y-auto p-3 space-y-4">
-                {/* Section 1 */}
-                <div>
-                  <p className="px-3 py-1 text-[10px] font-extrabold uppercase tracking-wider text-slate-400">
-                    Menu Pelayanan
-                  </p>
-                  <div className="space-y-1 mt-1">
-                    {filteredMainNav.map((item) => {
-                      const isActive = pathname === item.href;
-                      return (
-                        <Link
-                          key={item.href}
-                          href={item.href}
-                          onClick={() => setMobileOpen(false)}
-                          className={`flex items-center justify-between p-2.5 rounded-xl text-xs font-semibold transition-all ${
-                            isActive
-                              ? 'bg-[#80000f] text-white font-bold shadow-md shadow-[#80000f]/25'
-                              : 'text-slate-700 hover:bg-[#fff5f6] hover:text-[#80000f]'
-                          }`}
-                        >
-                          <div className="flex items-center gap-2.5">
-                            <span className={isActive ? 'text-white' : 'text-[#80000f]'}>
-                              {item.icon}
-                            </span>
-                            <span>{item.name}</span>
-                          </div>
-                          {item.badge}
-                        </Link>
-                      );
-                    })}
-                  </div>
-                </div>
-
-                {/* Section 2 */}
-                <div>
-                  <p className="px-3 py-1 text-[10px] font-extrabold uppercase tracking-wider text-slate-400">
-                    Data Sasaran Posyandu
-                  </p>
-                  <div className="space-y-1 mt-1">
-                    {filteredDataNav.map((item) => {
-                      const isActive = pathname === item.href;
-                      return (
-                        <Link
-                          key={item.href}
-                          href={item.href}
-                          onClick={() => setMobileOpen(false)}
-                          className={`flex items-center justify-between p-2.5 rounded-xl text-xs font-semibold transition-all ${
-                            isActive
-                              ? 'bg-[#80000f] text-white font-bold shadow-md shadow-[#80000f]/25'
-                              : 'text-slate-700 hover:bg-[#fff5f6] hover:text-[#80000f]'
-                          }`}
-                        >
-                          <div className="flex items-center gap-2.5">
-                            <span className={isActive ? 'text-white' : 'text-[#80000f]'}>
-                              {item.icon}
-                            </span>
-                            <span>{item.name}</span>
-                          </div>
-                          <ChevronRight className="w-3.5 h-3.5 opacity-50" />
-                        </Link>
-                      );
-                    })}
-                  </div>
-                </div>
-
-                {/* Section 3: Kelola Landing Page (Khusus Kader, disembunyikan untuk Bidan) */}
-                {activeRole === 'kader' && (
+                {isSuperAdmin ? (
                   <div>
-                    <p className="px-3 py-1 text-[10px] font-extrabold uppercase tracking-wider text-slate-400">
-                      Kelola Landing Page
+                    <p className="px-3 py-1 text-[10px] font-extrabold uppercase tracking-wider text-[#80000f]">
+                      Portal Super Admin
                     </p>
                     <div className="space-y-1 mt-1">
-                      {landingNav.map((item) => {
-                        const isActive =
-                          pathname === item.href ||
-                          pathname === '/kelola-jadwal' ||
-                          pathname === '/kelola-galeri';
+                      {superAdminNav.map((item) => {
+                        const isActive = isItemActive(item.href);
                         return (
                           <Link
                             key={item.href}
@@ -691,15 +695,81 @@ export default function Sidebar({ className = '' }: SidebarProps) {
                               </span>
                               <span>{item.name}</span>
                             </div>
-                            <ChevronRight className="w-3.5 h-3.5 opacity-50" />
+                            {item.badge}
                           </Link>
                         );
                       })}
                     </div>
                   </div>
+                ) : (
+                  <>
+                    {/* Section 1 */}
+                    <div>
+                      <p className="px-3 py-1 text-[10px] font-extrabold uppercase tracking-wider text-slate-400">
+                        Menu Pelayanan
+                      </p>
+                      <div className="space-y-1 mt-1">
+                        {adminPosyanduMainNav.map((item) => {
+                          const isActive = pathname === item.href;
+                          return (
+                            <Link
+                              key={item.href}
+                              href={item.href}
+                              onClick={() => setMobileOpen(false)}
+                              className={`flex items-center justify-between p-2.5 rounded-xl text-xs font-semibold transition-all ${
+                                isActive
+                                  ? 'bg-[#80000f] text-white font-bold shadow-md shadow-[#80000f]/25'
+                                  : 'text-slate-700 hover:bg-[#fff5f6] hover:text-[#80000f]'
+                              }`}
+                            >
+                              <div className="flex items-center gap-2.5">
+                                <span className={isActive ? 'text-white' : 'text-[#80000f]'}>
+                                  {item.icon}
+                                </span>
+                                <span>{item.name}</span>
+                              </div>
+                              {item.badge}
+                            </Link>
+                          );
+                        })}
+                      </div>
+                    </div>
+
+                    {/* Section 2 */}
+                    <div>
+                      <p className="px-3 py-1 text-[10px] font-extrabold uppercase tracking-wider text-slate-400">
+                        Data Sasaran Posyandu
+                      </p>
+                      <div className="space-y-1 mt-1">
+                        {adminPosyanduDataNav.map((item) => {
+                          const isActive = pathname === item.href;
+                          return (
+                            <Link
+                              key={item.href}
+                              href={item.href}
+                              onClick={() => setMobileOpen(false)}
+                              className={`flex items-center justify-between p-2.5 rounded-xl text-xs font-semibold transition-all ${
+                                isActive
+                                  ? 'bg-[#80000f] text-white font-bold shadow-md shadow-[#80000f]/25'
+                                  : 'text-slate-700 hover:bg-[#fff5f6] hover:text-[#80000f]'
+                              }`}
+                            >
+                              <div className="flex items-center gap-2.5">
+                                <span className={isActive ? 'text-white' : 'text-[#80000f]'}>
+                                  {item.icon}
+                                </span>
+                                <span>{item.name}</span>
+                              </div>
+                              <ChevronRight className="w-3.5 h-3.5 opacity-50" />
+                            </Link>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  </>
                 )}
 
-                {/* Section 4: Pengaturan Akun (Kader & Bidan) */}
+                {/* Section Pengaturan Akun */}
                 <div>
                   <p className="px-3 py-1 text-[10px] font-extrabold uppercase tracking-wider text-slate-400">
                     Pengaturan Akun
@@ -740,16 +810,14 @@ export default function Sidebar({ className = '' }: SidebarProps) {
                   className="w-full flex items-center justify-between p-2 rounded-xl hover:bg-white transition-colors text-left"
                 >
                   <div className="flex items-center gap-3">
-                    <div className="w-8 h-8 rounded-xl bg-[#80000f] text-white flex items-center justify-center font-bold text-xs shrink-0 shadow-xs">
-                      {activeRole === 'bidan' ? '👩‍⚕️' : '🧕'}
+                    <div
+                      className="w-8 h-8 rounded-xl bg-[#80000f] text-white flex items-center justify-center font-bold text-xs shrink-0 shadow-xs"
+                    >
+                      {isSuperAdmin ? '👑' : '🏥'}
                     </div>
                     <div>
-                      <p className="text-xs font-bold text-slate-900">
-                        {profileName}
-                      </p>
-                      <p className="text-[10px] text-slate-500 font-medium">
-                        {profileJabatan}
-                      </p>
+                      <p className="text-xs font-bold text-slate-900">{profileName}</p>
+                      <p className="text-[10px] text-slate-500 font-medium">{profileJabatan}</p>
                     </div>
                   </div>
                   <ChevronUp

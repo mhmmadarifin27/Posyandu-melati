@@ -16,11 +16,12 @@ import {
   Eye,
   EyeOff,
   ArrowLeft,
+  ArrowRight,
   ShieldCheck,
   CheckCircle2,
   AlertCircle,
 } from 'lucide-react';
-import { supabase, isSupabaseConfigured } from '@/lib/supabase';
+import { supabase, isSupabaseConfigured, PosyanduStore } from '@/lib/supabase';
 import { toast } from '@/components/ui/custom-toast';
 
 export default function LoginPage() {
@@ -83,8 +84,116 @@ export default function LoginPage() {
       return;
     }
 
+    // 0. Blokir Akun Kader & Bidan Lama (Sudah dilebur menjadi Admin Posyandu)
+    const BLOCKED_LEGACY_EMAILS = [
+      'kadermelati@gmail.com',
+      'bidanmelati@gmail.com',
+      'kader@gmail.com',
+      'bidan@gmail.com',
+    ];
+    if (BLOCKED_LEGACY_EMAILS.includes(cleanEmail)) {
+      setErrorMessage(
+        'Akun kader dan bidan lama telah dinonaktifkan dalam sistem SaaS. Peran operasional kini telah dilebur menjadi Admin Posyandu. Silakan gunakan akun Admin Posyandu terdaftar (misal: admin.melati@posyandu.id) atau masuk sebagai Super Admin.'
+      );
+      setIsLoading(false);
+      return;
+    }
+
     try {
-      // 1. Coba autentikasi via Supabase Auth jika terkonfigurasi
+      // 1. Cek Apakah Email Masih Berstatus Permohonan Pendaftaran (Pending / Ditolak)
+      const registrations = PosyanduStore.getRegistrations();
+      const pendingReg = registrations.find(
+        (r) => r.emailAdmin.toLowerCase() === cleanEmail && r.status === 'pending'
+      );
+      if (pendingReg) {
+        setErrorMessage(
+          `Pendaftaran untuk unit ${pendingReg.namaPosyandu} masih dalam status MENUNGGU PERSETUJUAN (ACC) oleh Super Admin Puskesmas Pembina. Anda baru dapat masuk setelah permohonan diverifikasi & disetujui.`
+        );
+        toast.warning(
+          'Akun Belum Di-ACC',
+          'Permohonan pendaftaran unit Posyandu Anda sedang dalam proses verifikasi Super Admin.'
+        );
+        setIsLoading(false);
+        return;
+      }
+
+      const rejectedReg = registrations.find(
+        (r) => r.emailAdmin.toLowerCase() === cleanEmail && r.status === 'rejected'
+      );
+      if (rejectedReg) {
+        setErrorMessage(
+          `Permohonan pendaftaran untuk unit ${rejectedReg.namaPosyandu} ditolak oleh Super Admin Puskesmas. Catatan: ${rejectedReg.notes || 'Silakan hubungi Puskesmas Pembina untuk info lebih lanjut.'}`
+        );
+        toast.error('Pendaftaran Ditolak', 'Permohonan pendaftaran posyandu Anda tidak disetujui.');
+        setIsLoading(false);
+        return;
+      }
+
+      // 2. Cek Akun Terdaftar (SaaS Multi-Tenant Accounts)
+      const registeredAccounts = PosyanduStore.getAccounts();
+      const matchedAccount = registeredAccounts.find(
+        (acc) => acc.email.toLowerCase() === cleanEmail
+      );
+
+      if (matchedAccount) {
+        if (matchedAccount.status === 'pending') {
+          setErrorMessage(
+            'Akun Anda masih dalam status Menunggu Persetujuan (ACC) dari Super Admin Puskesmas. Silakan tunggu konfirmasi persetujuan.'
+          );
+          setIsLoading(false);
+          return;
+        }
+
+        if (matchedAccount.status === 'rejected') {
+          setErrorMessage('Akun ini telah dinonaktifkan / ditolak oleh Super Admin.');
+          setIsLoading(false);
+          return;
+        }
+
+        if (matchedAccount.password && matchedAccount.password !== cleanPassword) {
+          setErrorMessage('Kata sandi salah. Silakan periksa kembali kata sandi Anda.');
+          setIsLoading(false);
+          return;
+        }
+
+        const isSuper = matchedAccount.role === 'super_admin';
+        const authPayload = {
+          id: matchedAccount.id,
+          email: matchedAccount.email,
+          role: matchedAccount.role,
+          nama: matchedAccount.nama,
+          posyanduId: matchedAccount.posyanduId,
+          posyanduNama: matchedAccount.posyanduNama || matchedAccount.posyandu,
+          posyandu: matchedAccount.posyandu || matchedAccount.posyanduNama,
+          jabatan: matchedAccount.jabatan,
+          loggedAt: new Date().toISOString(),
+        };
+
+        if (typeof window !== 'undefined') {
+          localStorage.setItem('posyandu_auth_user', JSON.stringify(authPayload));
+          localStorage.setItem('posyandu_active_role', matchedAccount.role);
+
+          // Set session cookies untuk proteksi Server-Side Middleware
+          document.cookie = `posyandu_auth_role=${matchedAccount.role}; path=/; max-age=86400; SameSite=Lax`;
+          document.cookie = `posyandu_auth_email=${encodeURIComponent(matchedAccount.email)}; path=/; max-age=86400; SameSite=Lax`;
+          document.cookie = `posyandu_auth_tenant=${encodeURIComponent(authPayload.posyanduNama || '')}; path=/; max-age=86400; SameSite=Lax`;
+        }
+
+        if (isSuper) {
+          setSuccessMessage(`Login berhasil sebagai Super Admin (${matchedAccount.nama})! Mengalihkan ke Portal Puskesmas...`);
+          setTimeout(() => {
+            router.push('/super-admin/dashboard');
+          }, 500);
+        } else {
+          setSuccessMessage(`Login berhasil sebagai Admin ${matchedAccount.posyanduNama || 'Posyandu'} (${matchedAccount.nama})!`);
+          setTimeout(() => {
+            router.push('/dashboard');
+          }, 500);
+        }
+        return;
+      }
+
+      // 2. Coba autentikasi via Supabase Auth jika terkonfigurasi
       if (isSupabaseConfigured && supabase) {
         const { data, error } = await supabase.auth.signInWithPassword({
           email: cleanEmail,
@@ -99,22 +208,28 @@ export default function LoginPage() {
         }
 
         if (data?.user) {
-          // Ambil role dari user_metadata Supabase (jika di-set di Auth Supabase: role = 'kader' atau 'bidan')
           const metaRole =
             data.user.user_metadata?.role ||
             data.user.app_metadata?.role;
 
-          const userRole =
-            metaRole === 'kader' || metaRole === 'bidan'
-              ? metaRole
-              : cleanEmail.includes('kader')
-              ? 'kader'
-              : 'bidan';
+          if (metaRole === 'kader' || metaRole === 'bidan' || BLOCKED_LEGACY_EMAILS.includes(cleanEmail)) {
+            await supabase.auth.signOut();
+            setErrorMessage(
+              'Akun kader dan bidan lama telah dinonaktifkan dalam sistem SaaS. Peran operasional telah dilebur menjadi Admin Posyandu. Silakan gunakan akun Admin Posyandu terdaftar.'
+            );
+            setIsLoading(false);
+            return;
+          }
+
+          const isSuper = metaRole === 'super_admin' || cleanEmail.includes('superadmin');
+          const userRole = isSuper ? 'super_admin' : 'admin_posyandu';
 
           const userName =
             data.user.user_metadata?.nama ||
             data.user.user_metadata?.full_name ||
-            (userRole === 'kader' ? 'Kader Posyandu RW 03' : 'Bdn. Ratna Kusuma, S.ST');
+            (isSuper ? 'Super Admin Puskesmas' : 'Admin Posyandu');
+
+          const userPosyandu = data.user.user_metadata?.posyandu || 'Posyandu Melati';
 
           if (typeof window !== 'undefined') {
             localStorage.setItem(
@@ -124,26 +239,46 @@ export default function LoginPage() {
                 email: cleanEmail,
                 role: userRole,
                 nama: userName,
+                posyanduNama: userPosyandu,
+                posyandu: userPosyandu,
                 loggedAt: new Date().toISOString(),
               })
             );
             localStorage.setItem('posyandu_active_role', userRole);
+
+            // Set session cookies untuk proteksi Server-Side Middleware
+            document.cookie = `posyandu_auth_role=${userRole}; path=/; max-age=86400; SameSite=Lax`;
+            document.cookie = `posyandu_auth_email=${encodeURIComponent(cleanEmail)}; path=/; max-age=86400; SameSite=Lax`;
+            document.cookie = `posyandu_auth_tenant=${encodeURIComponent(userPosyandu)}; path=/; max-age=86400; SameSite=Lax`;
           }
 
-          setSuccessMessage(
-            `Login berhasil sebagai ${userRole === 'kader' ? 'Kader Posyandu' : 'Bidan Desa'}! Mengalihkan ke dashboard...`
-          );
-          setTimeout(() => {
-            router.push('/dashboard');
-          }, 600);
+          if (isSuper) {
+            setSuccessMessage(`Login berhasil sebagai Super Admin! Mengalihkan ke Portal Puskesmas...`);
+            setTimeout(() => {
+              router.push('/super-admin/dashboard');
+            }, 500);
+          } else {
+            setSuccessMessage(`Login berhasil sebagai Admin Posyandu! Mengalihkan ke dashboard...`);
+            setTimeout(() => {
+              router.push('/dashboard');
+            }, 500);
+          }
           return;
         }
       }
 
-      // 2. Fallback Autentikasi Posyandu (Mode offline / local storage)
-      const userRole = cleanEmail.includes('kader') ? 'kader' : 'bidan';
-      const userName =
-        userRole === 'kader' ? 'Kader Posyandu RW 03' : 'Bdn. Ratna Kusuma, S.ST';
+      // 3. Fallback Autentikasi Demo
+      const isSuper = cleanEmail.includes('super') || cleanEmail.includes('admin@');
+      const userRole = isSuper ? 'super_admin' : 'admin_posyandu';
+      const posyanduTarget = cleanEmail.includes('mawar')
+        ? 'Posyandu Mawar'
+        : cleanEmail.includes('anggrek')
+        ? 'Posyandu Anggrek'
+        : 'Posyandu Melati';
+
+      const userName = isSuper
+        ? 'Dr. Hendra Gunawan, M.Kes'
+        : `Admin ${posyanduTarget}`;
 
       if (typeof window !== 'undefined') {
         localStorage.setItem(
@@ -152,18 +287,30 @@ export default function LoginPage() {
             email: cleanEmail,
             role: userRole,
             nama: userName,
+            posyanduNama: posyanduTarget,
+            posyandu: posyanduTarget,
             loggedAt: new Date().toISOString(),
           })
         );
         localStorage.setItem('posyandu_active_role', userRole);
+
+        // Set session cookies untuk proteksi Server-Side Middleware
+        document.cookie = `posyandu_auth_role=${userRole}; path=/; max-age=86400; SameSite=Lax`;
+        document.cookie = `posyandu_auth_email=${encodeURIComponent(cleanEmail)}; path=/; max-age=86400; SameSite=Lax`;
+        document.cookie = `posyandu_auth_tenant=${encodeURIComponent(posyanduTarget)}; path=/; max-age=86400; SameSite=Lax`;
       }
 
-      setSuccessMessage(
-        `Login berhasil sebagai ${userRole === 'kader' ? 'Kader Posyandu' : 'Bidan Desa'}! Mengalihkan ke dashboard...`
-      );
-      setTimeout(() => {
-        router.push('/dashboard');
-      }, 600);
+      if (isSuper) {
+        setSuccessMessage(`Login berhasil sebagai Super Admin! Mengalihkan ke portal Puskesmas...`);
+        setTimeout(() => {
+          router.push('/super-admin/dashboard');
+        }, 500);
+      } else {
+        setSuccessMessage(`Login berhasil sebagai Admin ${posyanduTarget}! Mengalihkan ke dashboard...`);
+        setTimeout(() => {
+          router.push('/dashboard');
+        }, 500);
+      }
     } catch (err: unknown) {
       console.error('Login error:', err);
       setErrorMessage('Terjadi kesalahan saat masuk. Silakan periksa kembali email & kata sandi.');
@@ -207,31 +354,24 @@ export default function LoginPage() {
             animate="visible"
           >
             {/* Header Form & Logo */}
-            <motion.div variants={itemVariants} className="space-y-3">
-              <div className="flex items-center gap-3">
-                <div className="relative w-11 h-11 rounded-2xl bg-[#fff0f2] border border-[#fce1e4] flex items-center justify-center p-1.5 shadow-xs">
-                  <Image
-                    src="/images/logo-posyandu.png"
-                    alt="Logo Posyandu Melati"
-                    width={36}
-                    height={36}
-                    className="object-contain"
-                  />
-                </div>
-                <div>
-                  <h3 className="text-sm font-black tracking-wide text-slate-900 uppercase">
-                    Posyandu <span className="text-[#80000f]">Melati</span>
-                  </h3>
-                  <p className="text-[11px] text-slate-500 font-medium">Binaan Puskesmas Pembina</p>
-                </div>
+            <motion.div variants={itemVariants} className="space-y-4">
+              <div className="flex items-center justify-start">
+                <Image
+                  src="/images/logo-posyandugo-maroon.png"
+                  alt="Logo PosyanduGo"
+                  width={200}
+                  height={42}
+                  priority
+                  className="h-7 sm:h-8 w-auto object-contain drop-shadow-2xs"
+                />
               </div>
 
               <div>
                 <h1 className="text-2xl sm:text-3xl font-extrabold text-slate-900 tracking-tight">
-                  Masuk ke Sistem
+                  Masuk ke Portal
                 </h1>
                 <p className="text-xs sm:text-sm text-slate-500 mt-1">
-                  Gunakan akun Kader atau Tenaga Medis Bidan untuk mengelola pelayanan.
+                  Portal resmi untuk Super Admin Puskesmas dan Admin Posyandu Terpadu.
                 </p>
               </div>
             </motion.div>
@@ -320,24 +460,11 @@ export default function LoginPage() {
                 </div>
               </div>
 
-              {/* Remember Me Checkbox */}
-              <div className="flex items-center justify-between pt-0.5">
-                <label className="flex items-center gap-2 cursor-pointer select-none">
-                  <input
-                    type="checkbox"
-                    checked={rememberMe}
-                    onChange={(e) => setRememberMe(e.target.checked)}
-                    className="w-4 h-4 rounded text-[#80000f] focus:ring-[#80000f] border-slate-300 cursor-pointer accent-[#80000f]"
-                  />
-                  <span className="text-xs text-slate-600 font-medium">Ingat saya di perangkat ini</span>
-                </label>
-              </div>
-
               {/* Tombol Submit Masuk */}
               <Button
                 type="submit"
                 disabled={isLoading}
-                className="w-full h-11 rounded-xl bg-[#80000f] hover:bg-[#68000c] text-white font-bold text-xs sm:text-sm shadow-md shadow-[#80000f]/25 transition-all cursor-pointer"
+                className="w-full h-11 rounded-xl bg-[#80000f] hover:bg-[#9c0013] text-white font-bold text-xs sm:text-sm shadow-md shadow-rose-950/20 transition-all cursor-pointer"
               >
                 {isLoading ? (
                   <span className="inline-flex items-center gap-2">
@@ -347,18 +474,74 @@ export default function LoginPage() {
                 ) : (
                   <span className="inline-flex items-center gap-2">
                     <ShieldCheck className="w-4 h-4" />
-                    <span>Masuk ke Dashboard</span>
+                    <span>Masuk ke Portal</span>
                   </span>
                 )}
               </Button>
             </motion.form>
 
+            {/* Pendaftaran Posyandu Baru CTA */}
+            <motion.div variants={itemVariants} className="pt-1">
+              <div className="p-3.5 rounded-2xl bg-rose-50/70 border border-rose-200/80 text-center space-y-2">
+                <p className="text-xs text-slate-700 font-medium">
+                  Belum memiliki akun unit Posyandu?
+                </p>
+                <Link
+                  href="/daftar"
+                  className="inline-flex items-center justify-center gap-1.5 w-full py-2.5 px-4 rounded-xl bg-white hover:bg-rose-100/60 border border-rose-300 text-rose-700 font-bold text-xs shadow-2xs transition-all hover:scale-101 active:scale-99"
+                >
+                  <span>Daftarkan Unit Posyandu Anda</span>
+                  <ArrowRight className="w-3.5 h-3.5 text-rose-600" />
+                </Link>
+              </div>
+            </motion.div>
 
+            {/* Quick Demo Login Pills for Capstone & Testing */}
+            <motion.div variants={itemVariants} className="pt-2 border-t border-slate-100">
+              <p className="text-[11px] font-semibold text-slate-500 mb-2 text-center">
+                Pilih Akun Demo (Capstone Testing):
+              </p>
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-1.5">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setEmail('superadmin@posyandu.id');
+                    setPassword('admin123');
+                    toast.success('Akun Diisi', 'Super Admin Puskesmas: superadmin@posyandu.id');
+                  }}
+                  className="px-2 py-1.5 rounded-lg border border-[#fce1e4] bg-[#fff0f2] hover:bg-[#ffe3e7] text-[11px] font-semibold text-[#80000f] text-center transition-colors cursor-pointer"
+                >
+                  👑 Super Admin
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setEmail('admin.melati@posyandu.id');
+                    setPassword('123456');
+                    toast.success('Akun Diisi', 'Admin Posyandu Melati: admin.melati@posyandu.id');
+                  }}
+                  className="px-2 py-1.5 rounded-lg border border-rose-200 bg-rose-50 hover:bg-rose-100 text-[11px] font-semibold text-rose-800 text-center transition-colors cursor-pointer"
+                >
+                  🌸 Admin Melati
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setEmail('admin.mawar@posyandu.id');
+                    setPassword('123456');
+                    toast.success('Akun Diisi', 'Admin Posyandu Mawar: admin.mawar@posyandu.id');
+                  }}
+                  className="px-2 py-1.5 rounded-lg border border-amber-200 bg-amber-50 hover:bg-amber-100 text-[11px] font-semibold text-amber-800 text-center transition-colors cursor-pointer"
+                >
+                  🌹 Admin Mawar
+                </button>
+              </div>
+            </motion.div>
 
             {/* Footer */}
             <motion.div variants={itemVariants} className="text-center pt-1">
               <p className="text-[11px] text-slate-400">
-                Aplikasi Resmi Pelayanan Posyandu Melati RW 03 Sukamaju
+                PosyanduGo — Platform SaaS Manajemen Posyandu Multi-Tenant Terpadu
               </p>
             </motion.div>
           </motion.div>

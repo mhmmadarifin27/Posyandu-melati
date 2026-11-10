@@ -14,6 +14,7 @@ export interface ServiceStackItem {
   lead: string;
   image: string;
   themeGradient?: string;
+  ctaText?: string;
 }
 
 export const defaultServicesData: ServiceStackItem[] = [
@@ -120,24 +121,24 @@ export default function StackingCards({
                 marginBottom: isLast ? '0px' : '6rem',
               }}
             >
-              {/* Card Frame (Lebar & Mewah) */}
+              {/* Card Frame (Lebar & Mewah - Putih Bersih Kontras dengan Background Maroon) */}
               <div
-                className={`w-full rounded-[24px] sm:rounded-[32px] bg-gradient-to-br ${item.themeGradient} border border-rose-200/90 shadow-[0_25px_60px_-15px_rgba(128,0,15,0.12)] overflow-hidden transition-all duration-300`}
+                className="w-full rounded-[24px] sm:rounded-[32px] bg-white border border-slate-200/90 shadow-[0_25px_60px_-15px_rgba(0,0,0,0.35)] overflow-hidden transition-all duration-300"
               >
                 {/* Top Tab Bar (Always visible when stacked, clean without category badge) */}
-                <div className="w-full px-6 sm:px-10 py-3.5 bg-white/80 backdrop-blur-md border-b border-rose-100/80 flex items-center justify-between">
+                <div className="w-full px-6 sm:px-10 py-3.5 bg-slate-50/90 backdrop-blur-md border-b border-slate-100 flex items-center justify-between">
                   <div className="flex items-center gap-3">
                     <span className="font-serif font-black text-lg sm:text-xl text-[#80000f]">
                       {item.number}
                     </span>
-                    <span className="w-1.5 h-1.5 rounded-full bg-rose-400" />
+                    <span className="w-1.5 h-1.5 rounded-full bg-[#80000f]/60" />
                     <span className="font-serif font-bold text-sm sm:text-base text-slate-900 tracking-wide">
                       {item.title}
                     </span>
                   </div>
 
-                  <span className="text-xs font-semibold text-rose-900/60 uppercase tracking-wider">
-                    Posyandu Melati RW 03
+                  <span className="text-xs font-semibold text-slate-400 uppercase tracking-wider">
+                    PosyanduGo Platform
                   </span>
                 </div>
 
@@ -159,7 +160,7 @@ export default function StackingCards({
                         {item.features.map((feat, fIdx) => (
                           <div
                             key={fIdx}
-                            className="flex items-center gap-2.5 p-2.5 rounded-xl bg-white/80 border border-rose-100 text-xs sm:text-sm font-medium text-slate-700 shadow-2xs"
+                            className="flex items-center gap-2.5 p-2.5 rounded-xl bg-slate-50 border border-slate-200/80 text-xs sm:text-sm font-medium text-slate-700 shadow-2xs"
                           >
                             <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
                             <span className="line-clamp-1">{feat}</span>
@@ -174,7 +175,7 @@ export default function StackingCards({
                           onClick={() => onSelectService && onSelectService(item)}
                           className="inline-flex items-center gap-2 px-7 py-3.5 rounded-full bg-[#80000f] hover:bg-[#9c0013] text-white font-bold text-xs uppercase tracking-wider shadow-md shadow-rose-950/20 transition-all hover:scale-102 active:scale-98 cursor-pointer"
                         >
-                          <span>Pelajari Protokol Layanan</span>
+                          <span>{item.ctaText || "Pelajari Protokol Layanan"}</span>
                           <ArrowRight className="w-4 h-4" />
                         </button>
                       </div>
@@ -182,11 +183,11 @@ export default function StackingCards({
 
                     {/* Right Column: High-Res Photo Frame (Kotak Tegas & Bersih Tanpa Tulisan) */}
                     <div className="lg:col-span-5">
-                      <div className="relative aspect-[4/3] lg:aspect-[5/4] rounded-none overflow-hidden shadow-md border-2 border-slate-200/90 group bg-slate-100">
+                      <div className="relative aspect-[4/3] lg:aspect-[5/4] rounded-2xl overflow-hidden shadow-md border-2 border-slate-200/90 group bg-slate-100">
                         <img
                           src={item.image}
                           alt={item.title}
-                          className="w-full h-full object-cover object-center group-hover:scale-105 transition-transform duration-700 rounded-none"
+                          className="w-full h-full object-cover object-center group-hover:scale-105 transition-transform duration-700"
                         />
                       </div>
                     </div>

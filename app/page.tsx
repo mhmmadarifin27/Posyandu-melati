@@ -24,7 +24,6 @@ import {
   Bell,
   Menu,
   X,
-  CalendarCheck,
   Building2,
   FileText,
   Sparkles,
@@ -33,30 +32,74 @@ import {
   Search,
   Award,
   ChevronDown,
+  Layers,
+  Database,
+  Cpu,
+  BarChart3,
+  UserCheck,
+  Send,
+  Lock,
+  Mail,
+  HelpCircle,
 } from 'lucide-react';
 import CurvedMenu from '@/components/ui/curved-menu';
-import PosyanduCalendar from '@/components/PosyanduCalendar';
 import TiltedGridHero from '@/components/ui/tilted-grid-hero';
-import StackingCards from '@/components/ui/stacking-cards';
+import StackingCards, { ServiceStackItem } from '@/components/ui/stacking-cards';
 import {
   LandingStore,
-  PosyanduScheduleConfig,
   DEFAULT_GALLERY_PHOTOS,
-  DEFAULT_SCHEDULE_CONFIG,
 } from '@/lib/landing-store';
+import { PosyanduStore } from '@/lib/supabase';
+import { PosyanduRegistrationRequest } from '@/types/posyandu';
+import { toast } from '@/components/ui/custom-toast';
+import { Language, TRANSLATIONS } from '@/lib/translations';
+
+const IndonesiaFlag = () => (
+  <svg className="w-4 h-2.5 rounded-2xs shadow-2xs overflow-hidden shrink-0 border border-slate-300/40" viewBox="0 0 18 12" fill="none">
+    <rect width="18" height="6" fill="#E11D48" />
+    <rect y="6" width="18" height="6" fill="#FFFFFF" />
+  </svg>
+);
+
+const UkFlag = () => (
+  <svg className="w-4 h-2.5 rounded-2xs shadow-2xs overflow-hidden shrink-0 border border-slate-300/40" viewBox="0 0 18 12" fill="none">
+    <rect width="18" height="12" fill="#012169" />
+    <path d="M0 0L18 12M18 0L0 12" stroke="#FFFFFF" strokeWidth="2.4" />
+    <path d="M0 0L18 12M18 0L0 12" stroke="#C8102E" strokeWidth="1.2" />
+    <path d="M9 0V12M0 6H18" stroke="#FFFFFF" strokeWidth="4" />
+    <path d="M9 0V12M0 6H18" stroke="#C8102E" strokeWidth="2.4" />
+  </svg>
+);
 
 export default function LandingPage() {
   const [activeModalCard, setActiveModalCard] = useState<any | null>(null);
-  const [currentSlideIndex, setCurrentSlideIndex] = useState(0);
 
-  // Koleksi Foto Dokumentasi Kegiatan & Jadwal (Default SSR aman untuk mencegah Hydration Mismatch)
+  // Bahasa (ID / EN)
+  const [lang, setLang] = useState<Language>('id');
+  const t = TRANSLATIONS[lang];
+
+  useEffect(() => {
+    try {
+      const saved = localStorage.getItem('posyandugo_lang') as Language | null;
+      if (saved === 'id' || saved === 'en') {
+        setLang(saved);
+      }
+    } catch (e) {
+      // ignore
+    }
+  }, []);
+
+  const handleLangChange = (newLang: Language) => {
+    setLang(newLang);
+    try {
+      localStorage.setItem('posyandugo_lang', newLang);
+    } catch (e) {
+      // ignore
+    }
+  };
+
+  // Koleksi Foto Dokumentasi Kegiatan
   const [galleryImages, setGalleryImages] = useState(DEFAULT_GALLERY_PHOTOS);
-  const [scheduleConfig, setScheduleConfig] = useState<PosyanduScheduleConfig>(DEFAULT_SCHEDULE_CONFIG);
-  const [kaderContact, setKaderContact] = useState({
-    nama: 'Ny. Anisa Rahmawati',
-    noHp: '6281367895678',
-    jabatan: 'Ketua Kader Posyandu Melati',
-  });
 
   const [scrollY, setScrollY] = useState(0);
   const [scrollDirection, setScrollDirection] = useState<'up' | 'down'>('up');
@@ -80,313 +123,260 @@ export default function LandingPage() {
   }, []);
 
   useEffect(() => {
-    // Muat data dari localStorage setelah client terhidrasi tanpa error
     setGalleryImages(LandingStore.getGalleryImages());
-    setScheduleConfig(LandingStore.getSchedule());
-
-    const loadKader = () => {
-      if (typeof window !== 'undefined') {
-        try {
-          const raw = localStorage.getItem('posyandu_kader_contact');
-          if (raw) setKaderContact(JSON.parse(raw));
-        } catch {}
-      }
-    };
-    loadKader();
-
-    const handleUpdate = () => {
-      setGalleryImages(LandingStore.getGalleryImages());
-      setScheduleConfig(LandingStore.getSchedule());
-      loadKader();
-    };
-    window.addEventListener('posyandu_landing_updated', handleUpdate);
-    window.addEventListener('posyandu_profile_updated', handleUpdate);
-    window.addEventListener('storage', handleUpdate);
-    return () => {
-      window.removeEventListener('posyandu_landing_updated', handleUpdate);
-      window.removeEventListener('posyandu_profile_updated', handleUpdate);
-      window.removeEventListener('storage', handleUpdate);
-    };
   }, []);
 
-  // 3 Opsi Layanan Utama (Sesuai 3 Cards di Screenshot 4 Sinceri Senior Living)
-  const serviceCards = [
-    {
-      id: 1,
-      image: '/images/deteksi_stunting_balita.jpg',
-      category: 'Usia 0 - 59 Bulan',
-      title: 'Pemantauan Balita & KMS WHO',
-      subtitle: 'Pediatri & Pertumbuhan Anak',
-      description:
-        'Penimbangan berat badan balita (BB), pengukuran tinggi badan (TB), dan lingkar kepala secara rutin menggunakan timbangan digital terstandar. Plotting otomatis ke kurva Z-Score WHO untuk deteksi dini stunting dan pemantauan weight faltering (2T).',
-      features: [
-        'Plotting Kurva Z-Score KMS WHO Digital',
-        'Imunisasi Dasar Lengkap (Polio, DPT-HB-Hib, MR)',
-        'Distribusi Menu MBG Tambahan (Protein Hewani)',
-        'Pemberian Vitamin A & Obat Cacing Rutin',
-      ],
-      schedule: 'Setiap Tanggal 15 (08.30 - 12.00 WIB)',
-      lead: 'Bdn. Siti Rahma, S.Tr.Keb & Tim Kader',
-    },
-    {
-      id: 2,
-      image: '/images/dok_bumil_checkup.jpg',
-      category: 'Maternal & Pasca Salin',
-      title: 'Ibu Hamil & Konseling Laktasi',
-      subtitle: 'Kesehatan Ibu & Janin',
-      description:
-        'Pemeriksaan antenatal menyeluruh meliputi pengukuran tekanan darah, tinggi fundus, dan pita lingkar lengan atas (LiLA) guna mencegah risiko Kurang Energi Kronis (KEK) dan anemia. Dilengkapi bimbingan laktasi serta persiapan persalinan aman.',
-      features: [
-        'Skrining LiLA (< 23.5 cm) & Deteksi Dini KEK',
-        'Pemeriksaan Tekanan Darah & Buku KIA',
-        'Pemberian Tablet Tambah Darah (TTD)',
-        'Bimbingan Perlekatan Menyusui & Manajemen ASI',
-      ],
-      schedule: 'Setiap Tanggal 15 (09.00 - 11.30 WIB)',
-      lead: 'Bidan Pembina Puskesmas Pembina',
-    },
-    {
-      id: 3,
-      image: '/images/hero_posyandu.jpg',
-      category: 'Usia 60+ Tahun',
-      title: 'Posyandu Lansia & Skrining PTM',
-      subtitle: 'Geriatri Sehat & Produktif',
-      description:
-        'Pemeriksaan kesehatan terpadu faktor risiko Penyakit Tidak Menular (PTM) bagi para lanjut usia di lingkungan RW 03. Meliputi tensi darah digital, cek gula darah sewaktu (GDS), asam urat, kolesterol, dan senam kebugaran lansia bersama.',
-      features: [
-        'Pemeriksaan Tekanan Darah & Hipertensi',
-        'Tes Laboratorium Sederhana (Gula Darah & Asam Urat)',
-        'Senam Jantung & Kebugaran Lansia Bersama',
-        'Konsultasi Diet Rendah Garam & Kolesterol',
-      ],
-      schedule: 'Setiap Tanggal 15 (08.00 - 11.00 WIB)',
-      lead: 'Tim Medis Puskesmas & Kader Lansia',
-    },
-    {
-      id: 4,
-      image: '/images/galeri_pmt.jpg',
-      category: 'Gizi & Nutrisi Terpadu',
-      title: 'Pendampingan Menu MBG & PMT',
-      subtitle: 'Nutrisi Seimbang Keluarga',
-      description:
-        'Distribusi makanan bergizi tambahan berbasis protein hewani lokal, panduan Isi Piringku Kemenkes RI, serta pendampingan pola asuh makan anak untuk mewujudkan generasi bebas stunting di RW 03.',
-      features: [
-        'Menu Tambahan Berbasis Protein Hewani',
-        'Formula Rekomendasi Menu MBG Teruji',
-        'Pendampingan Pola Makan Balita 2T',
-        'Konsultasi Ahli Gizi Binaan Puskesmas',
-      ],
-      schedule: 'Setiap Tanggal 15 (08.30 - 12.00 WIB)',
-      lead: 'Bidan Desa & Ahli Gizi Puskesmas',
-    },
+  // FAQ Accordion State
+  const [openFaqIndex, setOpenFaqIndex] = useState<number | null>(0);
+  const toggleFaq = (idx: number) => {
+    setOpenFaqIndex(openFaqIndex === idx ? null : idx);
+  };
+
+  const saasNavItems = [
+    { heading: lang === 'id' ? 'Beranda' : 'Home', href: '/', subheading: 'Portal SaaS PosyanduGo' },
+    { heading: t.nav.howItWorks, href: '#cara-kerja', subheading: lang === 'id' ? 'Alur Operasional & Isolasi Data' : 'Operational Workflow & Data Isolation' },
+    { heading: t.nav.features, href: '#fitur-saas', subheading: 'e-KMS WHO & SPK MBG SAW' },
+    { heading: t.nav.documentation, href: '#galeri', subheading: lang === 'id' ? 'Galeri Kegiatan Posyandu' : 'Healthcare Activity Gallery' },
+    { heading: t.nav.faq, href: '#faq', subheading: lang === 'id' ? 'Pusat Informasi & Bantuan' : 'Information & Support' },
+    { heading: lang === 'id' ? 'Daftar Mandiri' : 'Self-Register', href: '/daftar', subheading: lang === 'id' ? 'Formulir Lengkap 3-Tahap' : 'Comprehensive 3-Stage Form' },
+    { heading: t.nav.login, href: '/login', subheading: 'Super Admin & Admin Posyandu' },
   ];
 
-  const handlePrevSlide = () => {
-    setCurrentSlideIndex((prev) => (prev === 0 ? serviceCards.length - 1 : prev - 1));
-  };
-
-  const handleNextSlide = () => {
-    setCurrentSlideIndex((prev) => (prev === serviceCards.length - 1 ? 0 : prev + 1));
-  };
-
   return (
-    <div className="min-h-screen bg-white text-slate-800 font-sans selection:bg-rose-200 selection:text-rose-900 scroll-smooth">
+    <div className="min-h-screen bg-[#faf6f6] text-slate-800 font-sans selection:bg-[#80000f]/20 selection:text-[#80000f] scroll-smooth">
       {/* ========================================================================= */}
-      {/* MAIN NAVBAR (Smart Scroll: Transparent & Hidden on Scroll Down, Resurfaces on Up) */}
+      {/* 1. MAIN NAVBAR (Centered Desktop Floating Bar + Smart Scroll Direction)     */}
       {/* ========================================================================= */}
       <header
-        className={`fixed top-0 left-0 right-0 z-40 transition-all duration-300 ease-in-out ${
-          scrollDirection === 'down' && scrollY > 20
-            ? 'bg-transparent border-transparent shadow-none backdrop-blur-none'
-            : 'bg-white/95 backdrop-blur-md border-b border-rose-100/90 shadow-2xs'
+        className={`fixed top-4 left-0 right-0 z-50 transition-all duration-300 ease-in-out px-4 flex justify-center pointer-events-none ${
+          scrollDirection === 'down' && scrollY > 60
+            ? '-translate-y-28 opacity-0'
+            : 'translate-y-0 opacity-100'
         }`}
       >
-        <div className="w-full pl-4 sm:pl-6 lg:pl-8 pr-2 sm:pr-4 h-20 sm:h-22 flex items-center justify-between">
-          {/* Brand Logo - Clicking Goes Directly to Dashboard */}
-          <div
-            className={`transition-all duration-300 ease-in-out transform ${
-              scrollDirection === 'down' && scrollY > 160
-                ? 'opacity-0 -translate-y-10 pointer-events-none'
-                : 'opacity-100 translate-y-0 pointer-events-auto'
-            }`}
+        <div className="w-full max-w-5xl bg-white/95 backdrop-blur-md border border-slate-200/90 shadow-md shadow-slate-200/40 rounded-full px-5 sm:px-7 py-2 sm:py-2.5 flex items-center justify-between pointer-events-auto">
+          {/* Brand Logo - PosyanduGo (Sleek & Pas Ukurannya) */}
+          <Link
+            href="/"
+            className="flex items-center gap-2 group cursor-pointer"
+            title="PosyanduGo — Platform SaaS Multi-Tenant"
           >
+            <img
+              src="/images/logo-posyandugo-maroon.png"
+              alt="Logo PosyanduGo"
+              className="h-6 sm:h-7 md:h-7.5 w-auto object-contain transition-transform group-hover:scale-105"
+            />
+          </Link>
+
+          {/* Desktop Center Links */}
+          <nav className="hidden md:flex items-center gap-6 text-xs font-semibold text-slate-600">
+            <a href="#cara-kerja" className="hover:text-[#80000f] transition-colors">{t.nav.howItWorks}</a>
+            <a href="#fitur-saas" className="hover:text-[#80000f] transition-colors">{t.nav.features}</a>
+            <a href="#galeri" className="hover:text-[#80000f] transition-colors">{t.nav.documentation}</a>
+            <a href="#faq" className="hover:text-[#80000f] transition-colors">{t.nav.faq}</a>
+          </nav>
+
+          {/* Right Action: Language Switcher Capsule & Maroon Login Button */}
+          <div className="flex items-center gap-2 sm:gap-2.5">
+            {/* Language Capsule Switcher (ID / EN) - Maroon Active State */}
+            <div className="flex items-center rounded-full bg-slate-100/95 border border-slate-300/80 p-0.5 select-none shadow-2xs">
+              <button
+                type="button"
+                onClick={() => handleLangChange('id')}
+                className={`flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-bold transition-all cursor-pointer ${
+                  lang === 'id'
+                    ? 'bg-[#80000f] text-white shadow-xs'
+                    : 'text-slate-600 hover:text-slate-900'
+                }`}
+                title="Bahasa Indonesia"
+              >
+                <IndonesiaFlag />
+                <span>ID</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => handleLangChange('en')}
+                className={`flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-bold transition-all cursor-pointer ${
+                  lang === 'en'
+                    ? 'bg-[#80000f] text-white shadow-xs'
+                    : 'text-slate-600 hover:text-slate-900'
+                }`}
+                title="English"
+              >
+                <UkFlag />
+                <span>EN</span>
+              </button>
+            </div>
+
+            {/* Login Button (Maroon #80000f) */}
             <Link
               href="/login"
-              className="flex items-center gap-3.5 group cursor-pointer"
-              title="Masuk ke Sistem Posyandu"
+              className="inline-flex items-center gap-1.5 px-4.5 py-2 rounded-full bg-[#80000f] hover:bg-[#9c0013] text-white font-bold text-xs shadow-md shadow-rose-950/20 transition-all hover:scale-102 active:scale-98 cursor-pointer"
             >
-              <img
-                src="/images/logo-posyandu.png"
-                alt="Logo Posyandu Melati"
-                className="h-14 sm:h-16 w-auto object-contain transition-transform group-hover:scale-105"
-              />
-              <div>
-                <div className="flex items-center gap-2">
-                  <span className="font-serif font-bold text-lg sm:text-xl tracking-wide text-slate-900 group-hover:text-rose-600 transition-colors">
-                    POSYANDU <span className="text-rose-600">MELATI</span>
-                  </span>
-                </div>
-                <p className="text-[10px] sm:text-[11px] font-sans uppercase tracking-widest text-slate-500 font-bold">
-                  Kesehatan Ibu &amp; Anak &bull; RW 03 Sukamaju
-                </p>
-              </div>
+              <span>{t.nav.login}</span>
+              <ArrowRight className="w-3.5 h-3.5 text-rose-200" />
             </Link>
-          </div>
-
-          {/* Right Action: Clean Modern Curved Menu Toggle */}
-          <div
-            className={`flex items-center gap-3 transition-all duration-300 ease-in-out transform ${
-              scrollDirection === 'down' && scrollY > 160
-                ? 'opacity-0 -translate-y-10 pointer-events-none'
-                : 'opacity-100 translate-y-0 pointer-events-auto'
-            }`}
-          >
-            <CurvedMenu />
+            <div className="md:hidden">
+              <CurvedMenu navItems={saasNavItems} />
+            </div>
           </div>
         </div>
       </header>
 
-      {/* Fixed Header Spacer */}
-      <div className="h-20 sm:h-22 shrink-0 pointer-events-none" />
-
       {/* ========================================================================= */}
-      {/* 3. HERO SECTION (Sinceri Senior Living Exact Full-Bleed Layout)           */}
+      {/* 2. HERO SECTION (Noxus.ai Inspired Minimalist SaaS Hero with Dot Clusters) */}
       {/* ========================================================================= */}
-      <section className="relative w-full overflow-hidden bg-white min-h-[500px] lg:min-h-[560px] xl:min-h-[600px] flex items-center border-b border-rose-100">
-        {/* Right Full-Bleed Image Background that Blends into Left */}
-        <div className="absolute inset-y-0 right-0 w-full lg:w-[62%] xl:w-[58%] h-full overflow-hidden">
-          <img
-            src="/images/hero_posyandu.jpg"
-            alt="Kehangatan Pelayanan Posyandu Melati"
-            className="w-full h-full object-cover object-center"
-          />
-          {/* Smooth Gradient Overlay: Fades from solid white into transparent on the right */}
-          <div className="absolute inset-0 bg-gradient-to-r from-white via-white/85 sm:via-white/70 to-transparent hidden sm:block" />
-          <div className="absolute inset-0 bg-white/85 sm:hidden" />
-        </div>
+      <section className="relative w-full overflow-hidden bg-[#faf6f6] pt-28 sm:pt-36 pb-16 sm:pb-22">
+        {/* Subtle Top-Center Semi-Circle Maroon Glow (Menyelimuti Latar Belakang Navbar ke Puncak Layar) */}
+        <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[700px] sm:w-[1000px] lg:w-[1300px] h-[360px] sm:h-[460px] pointer-events-none rounded-b-[100%] bg-gradient-to-b from-[#80000f]/[0.08] via-[#80000f]/[0.03] to-transparent blur-2xl" />
+        <div className="absolute inset-0 pointer-events-none bg-[radial-gradient(ellipse_80%_45%_at_50%_0%,rgba(128,0,15,0.06),rgba(250,246,246,0))]" />
 
-        {/* Faint Concentric / Floral Watermark Pattern on Left Background (Sinceri Signature) */}
-        <div className="absolute -left-16 top-1/2 -translate-y-1/2 w-[540px] h-[540px] pointer-events-none opacity-[0.06] text-rose-800 hidden md:block">
-          <svg viewBox="0 0 200 200" className="w-full h-full" fill="none" stroke="currentColor">
-            <circle cx="100" cy="100" r="90" strokeWidth="2" />
-            <circle cx="100" cy="100" r="70" strokeWidth="1.5" />
-            <circle cx="100" cy="100" r="50" strokeWidth="1.5" />
-            <path d="M20 100 Q 100 20 180 100 Q 100 180 20 100 Z" strokeWidth="2" />
-            <path d="M100 20 Q 180 100 100 180 Q 20 100 100 20 Z" strokeWidth="2" />
-            <circle cx="65" cy="100" r="22" strokeWidth="1.5" />
-            <circle cx="135" cy="100" r="22" strokeWidth="1.5" />
-          </svg>
-        </div>
+        {/* Center Typography & CTAs (Z-20) */}
+        <div className="relative z-20 max-w-2xl mx-auto px-4 sm:px-6 text-center space-y-4 mb-10 sm:mb-14">
+          <h1 className="text-3xl sm:text-5xl lg:text-[52px] font-extrabold text-[#18181B] tracking-tight leading-[1.12]">
+            {t.hero.titleLine1} <br className="hidden sm:inline" />
+            <span className="text-[#80000f] font-black">
+              {t.hero.titleHighlight}
+            </span>
+          </h1>
 
-        {/* Hero Left Content Container */}
-        <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16 sm:py-20 lg:py-24 w-full">
-          <div className="max-w-2xl lg:max-w-xl xl:max-w-2xl space-y-5 sm:space-y-6">
-            {/* Sinceri-style Big Warm Serif Headline */}
-            <h1 className="font-serif text-3xl sm:text-4xl lg:text-5xl xl:text-6xl font-bold text-slate-900 tracking-tight leading-[1.12]">
-              Mari Datang dan Rasakan Kehangatan di Posyandu
-            </h1>
-
-            {/* Sinceri-style Bullet Categories Subtitle */}
-            <div className="text-sm sm:text-base font-bold text-slate-800 tracking-wide flex items-center gap-2 flex-wrap">
-              <span>Balita &amp; Anak</span>
-              <span className="text-rose-500 font-bold">&bull;</span>
-              <span>Ibu Hamil &amp; Menyusui</span>
-              <span className="text-rose-500 font-bold">&bull;</span>
-              <span>Lansia Sehat</span>
-            </div>
-
-            {/* Sinceri-style Warm Emotional Paragraph */}
-            <p className="text-slate-600 text-sm sm:text-base leading-relaxed max-w-xl">
-              Pelayanan kesehatan keluarga seharusnya terasa ramah, dekat, dan berlandaskan kepedulian yang tulus. Di Posyandu Melati RW 03, setiap layanan kami dirancang melalui dukungan personal, pemantauan gizi terukur standar WHO, serta lingkungan yang nyaman untuk tumbuh kembang buah hati dan kesehatan orang tua. Setiap warga didampingi dengan penuh cinta &mdash; layaknya keluarga sendiri.
-            </p>
-
-            {/* Sinceri-style Dual Pill Buttons (Side by Side) */}
-            <div className="pt-2 flex flex-col sm:flex-row items-stretch sm:items-center gap-3 sm:gap-4">
-              <a
-                href="#jadwal"
-                className="px-8 py-4 rounded-full bg-rose-500 hover:bg-rose-600 text-white font-bold text-xs uppercase tracking-wider shadow-md shadow-rose-200 text-center transition-all hover:scale-102 active:scale-98"
-              >
-                Jadwal Kunjungan Posyandu
-              </a>
-
-              <a
-                href="https://wa.me/6281278901234?text=Halo%20Bidan%20Siti%20Rahma,%20saya%20warga%20RW%2003%20ingin%20konsultasi%20kesehatan%20keluarga"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="px-8 py-4 rounded-full bg-white hover:bg-rose-50 text-rose-800 font-bold text-xs uppercase tracking-wider border-2 border-rose-300 shadow-2xs text-center transition-colors"
-              >
-                Konsultasi Bidan Desa
-              </a>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* ========================================================================= */}
-      {/* 4. OVERLAPPING WIDE BANNER (Selamat Datang)                              */}
-      {/* ========================================================================= */}
-      <section className="relative -mt-6 z-20 max-w-5xl mx-auto px-4 sm:px-6">
-        <div className="rounded-3xl bg-white border border-rose-200 shadow-lg shadow-rose-100/60 p-6 sm:p-7 text-center">
-          <h2 className="font-serif text-2xl sm:text-3xl font-bold text-slate-900 tracking-tight">
-            Selamat Datang di Posyandu Melati
-          </h2>
-        </div>
-      </section>
-
-      {/* ========================================================================= */}
-      {/* 5. WELCOME DESCRIPTION SECTION                                            */}
-      {/* ========================================================================= */}
-      <section id="tentang" className="py-10 sm:py-14 bg-white text-center">
-        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
-          <p className="text-slate-600 text-sm sm:text-base leading-relaxed max-w-3xl mx-auto">
-            Bayangkan kehidupan keluarga yang tenang dan bebas dari rasa cemas, di mana setiap fase tumbuh kembang buah hati dipantau dengan penuh kasih sayang, ibu hamil mendapatkan bimbingan nutrisi terbaik, dan para lansia menikmati masa tua yang sehat, aktif, dan bahagia. Pelayanan kesehatan berkualitas dan program gizi berkelanjutan yang Anda impikan kini siap mendampingi keluarga Anda di Posyandu Melati RW 03.
+          <p className="text-zinc-500 text-xs sm:text-sm md:text-[15px] leading-relaxed max-w-lg mx-auto">
+            {t.hero.subtitle}
           </p>
-        </div>
-      </section>
 
-      {/* ========================================================================= */}
-      {/* 7. FEATURE SECTION 1: TRUSTED COMMUNITY PARTNER                          */}
-      {/* ========================================================================= */}
-      <section className="py-16 sm:py-20 lg:py-24 bg-[#fffafb] border-y border-rose-100 overflow-hidden">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="grid grid-cols-1 lg:grid-cols-12 gap-10 lg:gap-14 items-center">
-            {/* Left: Framed, Firm Image Container (5 cols on lg) */}
-            <div className="lg:col-span-5 w-full">
-              <div className="relative rounded-2xl overflow-hidden shadow-lg shadow-rose-950/10 border-2 border-rose-200/90 aspect-[3/2] sm:aspect-[16/10] lg:aspect-[3/2] max-h-[420px] w-full bg-rose-50">
-                <img
-                  src="/images/mitra_posyandu.jpg"
-                  alt="Pemberian Vitamin A di Posyandu Melati"
-                  className="w-full h-full object-cover object-center transform transition duration-500 hover:scale-102"
-                  loading="lazy"
-                />
-              </div>
+          <div className="pt-2 flex items-center justify-center gap-3">
+            <Link
+              href="/daftar"
+              className="inline-flex items-center gap-2.5 px-6 sm:px-7 py-3 rounded-full bg-[#80000f] hover:bg-[#9c0013] text-white font-medium text-xs sm:text-sm shadow-md shadow-rose-950/20 transition-all hover:scale-102 active:scale-98 group cursor-pointer"
+            >
+              <span>{t.hero.ctaPrimary}</span>
+              <span className="w-5 h-5 rounded-full bg-[#60000b] flex items-center justify-center text-[10px] text-white font-bold group-hover:translate-x-0.5 transition-transform">
+                &gt;
+              </span>
+            </Link>
+            <Link
+              href="/login"
+              className="px-6 sm:px-7 py-3 rounded-full bg-white hover:bg-zinc-50 text-zinc-800 font-medium text-xs sm:text-sm border border-zinc-200 shadow-2xs transition-all hover:scale-102 active:scale-98 cursor-pointer"
+            >
+              {t.hero.ctaSecondary}
+            </Link>
+          </div>
+        </div>
+
+        {/* Floating Collage Stage (Cascading Gracefully Below CTAs) */}
+        <div className="relative max-w-7xl mx-auto px-4 sm:px-6">
+          {/* Decorative Dot Matrix Clusters (soft-maroon rounded tiles) */}
+          {/* Cluster 1: Middle-Right (Behind the Menu MBG badge & Top-Right card) */}
+          <div className="hidden lg:grid absolute right-[23%] xl:right-[26%] top-[110px] z-0 grid-cols-3 gap-2.5 opacity-65 pointer-events-none select-none">
+            {Array.from({ length: 9 }).map((_, i) => (
+              <div key={i} className="w-10 h-10 xl:w-11 xl:h-11 rounded-2xl bg-[#80000f]/[0.08]" />
+            ))}
+          </div>
+
+          {/* Cluster 2: Far-Right Edge */}
+          <div className="hidden lg:grid absolute -right-2 top-4 z-0 grid-cols-2 gap-2 opacity-35 pointer-events-none select-none">
+            {Array.from({ length: 8 }).map((_, i) => (
+              <div key={i} className="w-9 h-9 xl:w-10 xl:h-10 rounded-2xl bg-[#80000f]/[0.08]" />
+            ))}
+          </div>
+
+          {/* Cluster 3: Bottom Left / Behind Sofa Card */}
+          <div className="hidden lg:grid absolute left-[12%] bottom-6 z-0 grid-cols-3 gap-2 opacity-40 pointer-events-none select-none">
+            {Array.from({ length: 6 }).map((_, i) => (
+              <div key={i} className="w-9 h-9 xl:w-10 xl:h-10 rounded-2xl bg-[#80000f]/[0.08]" />
+            ))}
+          </div>
+
+          {/* Desktop & Tablet Asymmetrical Collage */}
+          <div className="hidden lg:block relative h-[560px] xl:h-[620px] w-full">
+            {/* 1. Top-Left: Woman portrait card */}
+            <div className="absolute top-2 left-4 xl:left-8 w-44 xl:w-52 h-44 xl:h-52 rounded-2xl overflow-hidden shadow-md border-2 border-white ring-1 ring-zinc-200/50 z-10 group">
+              <img
+                src="/images/dok_bumil_checkup.jpg"
+                alt="Pemeriksaan Ibu Hamil"
+                className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
+              />
             </div>
 
-            {/* Right: Editorial Text Container (7 cols on lg) */}
-            <div className="lg:col-span-7 flex flex-col justify-center space-y-5 text-left">
-              <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-rose-50 border border-rose-200 text-rose-700 text-xs font-semibold w-fit">
-                <span>Pelayanan Ramah &amp; Terintegrasi</span>
+            {/* Badge 1: Credit Statement Handled -> e-KMS Balita Tervalidasi */}
+            {/* Overlaps bottom-right of Top-Left card & top-left of Center-Left wide card */}
+            <div className="absolute top-[145px] left-14 xl:left-20 z-30 bg-white/95 backdrop-blur-md border border-zinc-200/80 shadow-md rounded-full px-4 py-2 flex items-center gap-2 text-xs font-semibold text-zinc-800 whitespace-nowrap">
+              <MessageCircle className="w-3.5 h-3.5 text-zinc-600" />
+              <span>{t.hero.badge1}</span>
+            </div>
+
+            {/* 2. Center-Left Wide Card (Man on yellow sofa with laptop -> Penimbangan Balita) */}
+            <div className="absolute top-[170px] left-28 xl:left-36 w-[340px] xl:w-[410px] h-48 xl:h-56 rounded-2xl overflow-hidden shadow-lg border-2 border-white ring-1 ring-zinc-200/50 z-10 group">
+              <img
+                src="/images/dok_timbang_balita.jpg"
+                alt="Penimbangan Balita Serentak"
+                className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
+              />
+            </div>
+
+            {/* 3. Bottom-Left: Vertical portrait card (Man in yellow sweater on phone -> Imunisasi Balita) */}
+            <div className="absolute top-[290px] left-4 xl:left-8 w-44 xl:w-52 h-64 xl:h-72 rounded-2xl overflow-hidden shadow-md border-2 border-white ring-1 ring-zinc-200/50 z-10 group">
+              <img
+                src="/images/galeri_imunisasi.jpg"
+                alt="Pelayanan Imunisasi Balita"
+                className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
+              />
+            </div>
+
+            {/* 4. Top-Right Card (Woman at desk -> Konseling Gizi) */}
+            <div className="absolute top-2 right-4 xl:right-8 w-56 xl:w-64 h-48 xl:h-54 rounded-2xl overflow-hidden shadow-md border-2 border-white ring-1 ring-zinc-200/50 z-10 group">
+              <img
+                src="/images/konseling_pilihan_tepat.jpg"
+                alt="Konseling Gizi Balita & Ibu"
+                className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
+              />
+            </div>
+
+            {/* Badge 2: Flight Upgraded 📅 -> Menu MBG Terhitung (SAW) */}
+            <div className="absolute top-[125px] right-[24%] xl:right-[27%] z-30 bg-white/95 backdrop-blur-md border border-zinc-200/80 shadow-md rounded-full px-4 py-2 flex items-center gap-2 text-xs font-semibold text-zinc-800 whitespace-nowrap">
+              <Calendar className="w-3.5 h-3.5 text-zinc-600" />
+              <span>{t.hero.badge2}</span>
+            </div>
+
+            {/* 5. Bottom-Center: Small vertical room shot (Woman at table -> PMT Balita) */}
+            <div className="absolute top-[260px] right-[35%] xl:right-[38%] w-32 xl:w-36 h-48 xl:h-56 rounded-2xl overflow-hidden shadow-md border-2 border-white ring-1 ring-zinc-200/50 z-10 group">
+              <img
+                src="/images/galeri_pmt.jpg"
+                alt="Distribusi Makanan Bergizi"
+                className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
+              />
+            </div>
+
+            {/* Badge 3: Insurance Documents Processed 📄 -> KOP Surat Laporan Otomatis */}
+            <div className="absolute top-[370px] right-[37%] xl:right-[41%] z-30 bg-white/95 backdrop-blur-md border border-zinc-200/80 shadow-md rounded-full px-4 py-2 flex items-center gap-2 text-xs font-semibold text-zinc-800 whitespace-nowrap">
+              <FileText className="w-3.5 h-3.5 text-zinc-600" />
+              <span>{t.hero.badge3}</span>
+            </div>
+
+            {/* 6. Bottom-Right: Wide landscape card (Woman on laptop -> Pemeriksaan Kesehatan Lansia) */}
+            <div className="absolute top-[210px] right-4 xl:right-8 w-72 xl:w-80 h-48 xl:h-56 rounded-2xl overflow-hidden shadow-lg border-2 border-white ring-1 ring-zinc-200/50 z-10 group">
+              <img
+                src="/images/galeri_lansia.jpg"
+                alt="Pemeriksaan Kesehatan Lansia"
+                className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
+              />
+            </div>
+          </div>
+
+          {/* Mobile & Tablet Fallback (Neat 2-Column Responsive Grid) */}
+          <div className="lg:hidden grid grid-cols-1 sm:grid-cols-2 gap-4 pt-4">
+            <div className="relative rounded-2xl overflow-hidden shadow-md border-2 border-white aspect-[4/3]">
+              <img src="/images/dok_timbang_balita.jpg" alt="Penimbangan Balita" className="w-full h-full object-cover" />
+              <div className="absolute bottom-3 left-3 bg-white/95 backdrop-blur-md border border-zinc-100 shadow-sm rounded-full px-3 py-1 flex items-center gap-1.5 text-[11px] font-semibold text-zinc-800">
+                <MessageCircle className="w-3.5 h-3.5 text-zinc-600" />
+                <span>{t.hero.badge1}</span>
               </div>
-
-              <h2 className="font-serif text-2xl sm:text-3xl lg:text-4xl xl:text-5xl font-bold text-slate-900 tracking-tight leading-[1.2]">
-                Posyandu Melati adalah Mitra Terpercaya Tumbuh Kembang &amp; Kesehatan Keluarga
-              </h2>
-
-              <p className="text-slate-600 text-sm sm:text-base lg:text-lg leading-relaxed">
-                Rangkaian layanan kami dirancang untuk menjawab kebutuhan kesehatan seluruh anggota keluarga di lingkungan RW 03 Sukamaju. Bersama tenaga bidan berlisensi dan kader posyandu yang tulus, Anda selalu memiliki tempat yang ramah dan nyaman untuk berkonsultasi mengenai nutrisi anak, kehamilan, hingga keluhan kesehatan lansia.
-              </p>
-
-              <p className="text-slate-600 text-sm sm:text-base lg:text-lg leading-relaxed">
-                Temukan jadwal sesi posyandu terdekat untuk keluarga Anda dan pastikan kehadiran buah hati Anda untuk mendapatkan pemantauan kurva KMS WHO secara cuma-cuma!
-              </p>
-
-              <div className="pt-2">
-                <a
-                  href="#jadwal"
-                  className="inline-flex items-center justify-center px-8 py-3.5 rounded-full bg-rose-500 hover:bg-rose-600 text-white font-bold text-xs uppercase tracking-wider shadow-md shadow-rose-200 transition-all hover:scale-102 active:scale-98"
-                >
-                  Temukan Jadwal Sesi Terdekat
-                </a>
+            </div>
+            <div className="relative rounded-2xl overflow-hidden shadow-md border-2 border-white aspect-[4/3]">
+              <img src="/images/konseling_pilihan_tepat.jpg" alt="Konseling Gizi" className="w-full h-full object-cover" />
+              <div className="absolute bottom-3 left-3 bg-white/95 backdrop-blur-md border border-zinc-100 shadow-sm rounded-full px-3 py-1 flex items-center gap-1.5 text-[11px] font-semibold text-zinc-800">
+                <Calendar className="w-3.5 h-3.5 text-zinc-600" />
+                <span>{t.hero.badge2}</span>
               </div>
             </div>
           </div>
@@ -394,261 +384,128 @@ export default function LandingPage() {
       </section>
 
       {/* ========================================================================= */}
-      {/* 8. 3-CARD OPTIONS CAROUSEL / GRID (Screenshot 4: Independent/Assisted...)  */}
+      {/* 3. VALUE PROPOSITION STAT STRIP                                           */}
       {/* ========================================================================= */}
-      {/* ========================================================================= */}
-      {/* 8. 4 PILAR LAYANAN TERPADU (Sticky Stacking Frames - DrDoctor Style)      */}
-      {/* ========================================================================= */}
-      <section id="layanan-opsi" className="w-full bg-[#fffafb] border-t border-rose-100 pt-16 sm:pt-20 pb-20 sm:pb-28">
-        <div className="max-w-[1380px] mx-auto px-4 sm:px-6 lg:px-8">
-          {/* Section Header */}
-          <div className="max-w-3xl mb-12 sm:mb-16 space-y-4">
-            <h2 className="font-serif text-3xl sm:text-4xl lg:text-5xl font-black text-slate-900 tracking-tight leading-[1.15]">
-              Fokus Layanan di Setiap Tahapan Hidup
-            </h2>
+      <section className="relative -mt-8 sm:-mt-10 z-20 max-w-5xl mx-auto px-4 sm:px-6">
+        <div className="rounded-3xl bg-white border border-[#80000f]/15 shadow-xl shadow-stone-300/40 p-6 sm:p-8">
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-6 text-center divide-y sm:divide-y-0 sm:divide-x divide-stone-100">
+            <div className="pt-2 sm:pt-0">
+              <div className="font-serif text-3xl font-black text-[#80000f]">{t.stats.stat1.number}</div>
+              <div className="text-xs font-bold text-slate-900 mt-1">{t.stats.stat1.title}</div>
+              <div className="text-[11px] text-slate-500 mt-0.5">{t.stats.stat1.desc}</div>
+            </div>
 
-            <p className="text-slate-600 text-sm sm:text-base lg:text-lg leading-relaxed">
-              Mulai dari penimbangan digital berkala untuk memastikan kecukupan nutrisi anak, hingga bimbingan laktasi bagi ibu baru dan skrining penyakit tidak menular bagi lansia—seluruh layanan disesuaikan secara personal saat Anda berkunjung ke Posyandu Melati RW 03.
+            <div className="pt-4 sm:pt-0">
+              <div className="font-serif text-3xl font-black text-slate-900">{t.stats.stat2.number}</div>
+              <div className="text-xs font-bold text-slate-900 mt-1">{t.stats.stat2.title}</div>
+              <div className="text-[11px] text-slate-500 mt-0.5">{t.stats.stat2.desc}</div>
+            </div>
+
+            <div className="pt-4 sm:pt-0">
+              <div className="font-serif text-3xl font-black text-[#80000f]">{t.stats.stat3.number}</div>
+              <div className="text-xs font-bold text-slate-900 mt-1">{t.stats.stat3.title}</div>
+              <div className="text-[11px] text-slate-500 mt-0.5">{t.stats.stat3.desc}</div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* ========================================================================= */}
+      {/* 4. CARA KERJA SISTEM (Alur Operasional & Isolasi Data)                    */}
+      {/* ========================================================================= */}
+      <section id="cara-kerja" className="pt-14 sm:pt-18 pb-20 sm:pb-24 bg-[#faf6f6] border-b border-[#80000f]/10">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="text-center max-w-3xl mx-auto mb-14 space-y-3">
+            <h2 className="font-serif text-3xl sm:text-4xl lg:text-5xl font-bold text-slate-900 tracking-tight">
+              {t.howItWorks.title}
+            </h2>
+            <p className="text-sm sm:text-base text-slate-600 leading-relaxed">
+              {t.howItWorks.desc}
             </p>
           </div>
 
-          {/* Sticky Stacking Cards Container */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-8 max-w-5xl mx-auto">
+            {/* Card 1: Admin Posyandu (Unit Operasional) */}
+            <div className="p-7 sm:p-8 rounded-3xl bg-white border border-[#80000f]/15 hover:border-[#80000f]/40 shadow-sm hover:shadow-xl hover:shadow-[#80000f]/10 hover:-translate-y-1 transition-all duration-300 space-y-4 group cursor-pointer">
+              <div className="w-12 h-12 rounded-2xl bg-[#80000f]/5 group-hover:bg-[#80000f]/10 border border-[#80000f]/15 text-[#80000f] flex items-center justify-center transition-colors">
+                <Users className="w-6 h-6" />
+              </div>
+              <div>
+                <span className="text-[11px] font-bold uppercase tracking-wider text-[#80000f]">{t.howItWorks.card1.tag}</span>
+                <h3 className="font-serif text-xl sm:text-2xl font-bold text-slate-900 mt-0.5">{t.howItWorks.card1.title}</h3>
+              </div>
+              <p className="text-xs sm:text-sm text-slate-600 leading-relaxed">
+                {t.howItWorks.card1.desc}
+              </p>
+              <ul className="space-y-2.5 text-xs text-slate-600 pt-3 border-t border-[#80000f]/10">
+                {t.howItWorks.card1.bullets.map((bullet, idx) => (
+                  <li key={idx} className="flex items-start gap-2">
+                    <Check className="w-4 h-4 text-[#80000f] shrink-0 mt-0.5" />
+                    <span>{bullet}</span>
+                  </li>
+                ))}
+              </ul>
+            </div>
+
+            {/* Card 2: Data Scoping & Multi-Tenancy */}
+            <div className="p-7 sm:p-8 rounded-3xl bg-white border border-[#80000f]/15 hover:border-[#80000f]/40 shadow-sm hover:shadow-xl hover:shadow-[#80000f]/10 hover:-translate-y-1 transition-all duration-300 space-y-4 group cursor-pointer">
+              <div className="w-12 h-12 rounded-2xl bg-[#80000f]/5 group-hover:bg-[#80000f]/10 border border-[#80000f]/15 text-[#80000f] flex items-center justify-center transition-colors">
+                <ShieldCheck className="w-6 h-6" />
+              </div>
+              <div>
+                <span className="text-[11px] font-bold uppercase tracking-wider text-[#80000f]">{t.howItWorks.card2.tag}</span>
+                <h3 className="font-serif text-xl sm:text-2xl font-bold text-slate-900 mt-0.5">{t.howItWorks.card2.title}</h3>
+              </div>
+              <p className="text-xs sm:text-sm text-slate-600 leading-relaxed">
+                {t.howItWorks.card2.desc}
+              </p>
+              <ul className="space-y-2.5 text-xs text-slate-600 pt-3 border-t border-[#80000f]/10">
+                {t.howItWorks.card2.bullets.map((bullet, idx) => (
+                  <li key={idx} className="flex items-start gap-2">
+                    <Check className="w-4 h-4 text-[#80000f] shrink-0 mt-0.5" />
+                    <span>{bullet}</span>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* ========================================================================= */}
+      {/* 5. FITUR UNGGULAN (Sticky Stacking Cards - Latar Maroon & Kartu Putih)      */}
+      {/* ========================================================================= */}
+      <section id="fitur-saas" className="relative w-full bg-[#80000f] text-white border-b border-[#60000b] pt-20 sm:pt-24 pb-20 sm:pb-28">
+        {/* Subtle Ambient Radial Highlight */}
+        <div className="absolute inset-0 pointer-events-none bg-[radial-gradient(ellipse_75%_50%_at_50%_0%,rgba(255,255,255,0.08),transparent)]" />
+
+        <div className="relative z-10 max-w-[1380px] mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="max-w-3xl mb-12 sm:mb-16 space-y-4">
+            <h2 className="font-serif text-3xl sm:text-4xl lg:text-5xl font-black text-white tracking-tight leading-[1.15]">
+              {t.features.title}
+            </h2>
+            <p className="text-rose-100/90 text-sm sm:text-base lg:text-lg leading-relaxed">
+              {t.features.desc}
+            </p>
+          </div>
+
           <StackingCards
-            onSelectService={(item) => {
-              const matched = serviceCards.find((c) => c.id === item.id) || serviceCards[0];
-              setActiveModalCard(matched);
-            }}
+            services={t.features.items as ServiceStackItem[]}
+            onSelectService={(item) => setActiveModalCard(item)}
           />
         </div>
       </section>
 
       {/* ========================================================================= */}
-      {/* 9. JADWAL PELAYANAN RUTIN & AGENDA (SWAPPED TO TOP AS REQUESTED)          */}
+      {/* 6. GALERI DOKUMENTASI KEGIATAN (Tilted Grid Hero 3D)                      */}
       {/* ========================================================================= */}
-      <section id="jadwal" className="py-20 bg-white border-t border-rose-100">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center max-w-2xl mx-auto mb-12 space-y-3">
-            <h2 className="font-serif text-3xl sm:text-4xl font-bold text-slate-900 tracking-tight">
-              Jadwal Sesi Posyandu Melati RW 03
-            </h2>
-            <p className="text-sm text-slate-600 leading-relaxed" suppressHydrationWarning>
-              Jadwal pelaksanaan posyandu untuk seluruh peserta (Balita, Ibu Hamil, Ibu Menyusui, dan Lansia) diselenggarakan <strong suppressHydrationWarning>serentak pada tanggal {scheduleConfig.sessionDate} {scheduleConfig.sessionMonth} {scheduleConfig.sessionYear}</strong> di {scheduleConfig.sessionLocation}. Silakan pilih tanggal pada kalender interaktif untuk melihat frame detail kegiatan terpadu.
-            </p>
-          </div>
-
-          {/* Interactive Calendar & Unified Activity Frame */}
-          <PosyanduCalendar />
-        </div>
-      </section>
-
-      {/* ========================================================================= */}
-      {/* 10. FEATURE SECTION: DECISION GUIDE (NOW POSITIONED BELOW JADWAL)          */}
-      {/* ========================================================================= */}
-      <section id="sasaran" className="py-16 sm:py-20 lg:py-24 bg-[#fffafb] border-t border-rose-100 overflow-hidden">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="grid grid-cols-1 lg:grid-cols-12 gap-10 lg:gap-14 items-center">
-            {/* Left: Editorial Text Container (7 cols on lg) */}
-            <div className="lg:col-span-7 flex flex-col justify-center space-y-5 text-left order-2 lg:order-1">
-              <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-rose-50 border border-rose-200 text-rose-700 text-xs font-semibold w-fit">
-                <span>Panduan &amp; Konseling Keluarga</span>
-              </div>
-
-              <h2 className="font-serif text-2xl sm:text-3xl lg:text-4xl xl:text-5xl font-bold text-slate-900 tracking-tight leading-[1.2]">
-                Apakah Posyandu Melati Pilihan Tepat untuk Keluarga Anda?
-              </h2>
-
-              <p className="text-slate-600 text-sm sm:text-base lg:text-lg leading-relaxed">
-                Memastikan buah hati tumbuh optimal dan orang tua tercinta tetap sehat adalah keputusan penting bagi setiap keluarga. Anda berhak mendapatkan seluruh informasi dan sarana pendukung terbaik untuk memandu keputusan gizi keluarga.
-              </p>
-
-              <p className="text-slate-600 text-sm sm:text-base lg:text-lg leading-relaxed">
-                Di Posyandu Melati, kami percaya bahwa setiap warga berhak melangkah dengan keyakinan penuh. Manfaatkan sarana pelayanan terpadu kami seperti <strong>Kalkulator Status Gizi KMS WHO</strong>, <strong>Rekomendasi Menu Gizi Tambahan PMT</strong>, dan <strong>Buku Panduan KIA</strong> untuk membantu Anda memantau kebutuhan nutrisi keluarga. Bidan dan kader kami hadir mendampingi di setiap langkah!
-              </p>
-
-              <div className="pt-2">
-                <a
-                  href={`https://wa.me/${scheduleConfig.contactWhatsapp || '6281278901234'}?text=Halo%20${encodeURIComponent(scheduleConfig.contactPersonName || 'Bidan Siti')},%20saya%20ingin%20berkonsultasi%20seputar%20posyandu%20dan%20gizi%20keluarga`}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="inline-flex items-center justify-center px-8 py-3.5 rounded-full bg-rose-500 hover:bg-rose-600 text-white font-bold text-xs uppercase tracking-wider shadow-md shadow-rose-200 transition-all hover:scale-102 active:scale-98"
-                >
-                  Mulai Konsultasi Sekarang
-                </a>
-              </div>
-            </div>
-
-            {/* Right: Framed, Firm Image Container (5 cols on lg) */}
-            <div className="lg:col-span-5 w-full order-1 lg:order-2">
-              <div className="relative rounded-2xl overflow-hidden shadow-lg shadow-rose-950/10 border-2 border-rose-200/90 aspect-[4/3] max-h-[420px] w-full bg-rose-50">
-                <img
-                  src="/images/konseling_pilihan_tepat.jpg"
-                  alt="Konseling Personal Keluarga di Posyandu Melati"
-                  className="w-full h-full object-cover object-center transform transition duration-500 hover:scale-102"
-                  loading="lazy"
-                />
-              </div>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* ========================================================================= */}
-      {/* 11. FASILITAS, LOKASI & KONTAK KADER                                      */}
-      {/* ========================================================================= */}
-      <section id="kontak" className="py-20 bg-[#fffafb] border-t border-rose-100">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center max-w-2xl mx-auto mb-14 space-y-3">
-            <h2 className="font-serif text-3xl sm:text-4xl font-bold text-slate-900 tracking-tight">
-              Kunjungi Balai Posyandu Melati
-            </h2>
-            <p className="text-sm text-slate-600">
-              {scheduleConfig.sessionLocation} selalu terbuka bagi seluruh warga. Hubungi Bidan Desa atau Ketua Kader kami untuk pertanyaan seputar posyandu.
-            </p>
-          </div>
-
-          <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start max-w-5xl mx-auto">
-            {/* Left: Detail Info & Kader Directory */}
-            <div className="lg:col-span-6 space-y-5">
-              <div className="p-6 rounded-3xl bg-white border border-rose-200 shadow-sm space-y-4">
-                <div className="flex items-start gap-3.5">
-                  <div className="w-10 h-10 rounded-2xl bg-rose-50 border border-rose-200 text-rose-600 flex items-center justify-center shrink-0">
-                    <MapPin className="w-5 h-5" />
-                  </div>
-                  <div>
-                    <h4 className="font-serif text-base font-bold text-slate-900">
-                      Alamat Balai Posyandu
-                    </h4>
-                    <p className="text-xs text-slate-600 mt-1 leading-relaxed">
-                      {scheduleConfig.sessionLocation}, {scheduleConfig.address}.
-                    </p>
-                    <p className="text-[11px] text-slate-500 mt-1">
-                      Patokan: Tepat di samping Lapangan Bulutangkis Warga RW 03.
-                    </p>
-                  </div>
-                </div>
-
-                <div className="pt-3 border-t border-rose-100 flex items-start gap-3.5">
-                  <div className="w-10 h-10 rounded-2xl bg-rose-50 border border-rose-200 text-rose-600 flex items-center justify-center shrink-0">
-                    <Clock className="w-5 h-5" />
-                  </div>
-                  <div>
-                    <h4 className="font-serif text-base font-bold text-slate-900">
-                      Jadwal Pelayanan
-                    </h4>
-                    <p className="text-xs text-slate-600 mt-1 leading-relaxed">
-                      &bull; Posyandu Serentak ({scheduleConfig.targetSummary}): Setiap Tanggal {scheduleConfig.sessionDate} ({scheduleConfig.sessionTime})<br />
-                      &bull; Pelaksanaan: {scheduleConfig.sessionLocation} (Seluruh Sasaran Hadir Bersama)<br />
-                      &bull; Konsultasi WhatsApp Bidan Desa: Setiap Hari Kerja (08.00 - 16.00 WIB)
-                    </p>
-                  </div>
-                </div>
-              </div>
-
-              {/* Staff Directory Cards */}
-              <div className="p-6 rounded-3xl bg-white border border-rose-200 shadow-sm space-y-3">
-                <h4 className="font-serif text-sm font-bold text-slate-900 flex items-center gap-2">
-                  <Users className="w-4 h-4 text-rose-600" />
-                  <span>Kontak Langsung Petugas Siaga</span>
-                </h4>
-
-                {/* Bidan Desa */}
-                <div className="flex items-center justify-between p-3 rounded-2xl bg-rose-50/60 border border-rose-100">
-                  <div className="flex items-center gap-3">
-                    <span className="text-xl">🩺</span>
-                    <div>
-                      <div className="font-bold text-xs text-slate-900" suppressHydrationWarning>
-                        {scheduleConfig.contactPersonName || 'Bdn. Siti Rahma, S.Tr.Keb'}
-                      </div>
-                      <div className="text-[11px] text-rose-700">Bidan Pembina Wilayah RW 03</div>
-                    </div>
-                  </div>
-                  <a
-                    href={`https://wa.me/${scheduleConfig.contactWhatsapp || '6281278901234'}?text=Halo%20${encodeURIComponent(scheduleConfig.contactPersonName || 'Bidan Siti')},%20saya%20warga%20RW%2003%20ingin%20konsultasi`}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="px-4 py-1.5 rounded-full bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold shadow-2xs transition-colors"
-                  >
-                    Chat WA
-                  </a>
-                </div>
-
-                {/* Ketua Kader */}
-                <div className="flex items-center justify-between p-3 rounded-2xl bg-pink-50/60 border border-pink-100">
-                  <div className="flex items-center gap-3">
-                    <span className="text-xl">🌸</span>
-                    <div>
-                      <div className="font-bold text-xs text-slate-900" suppressHydrationWarning>
-                        {kaderContact.nama || 'Ny. Anisa Rahmawati'}
-                      </div>
-                      <div className="text-[11px] text-pink-700" suppressHydrationWarning>
-                        {kaderContact.jabatan || 'Ketua Kader Posyandu Melati'}
-                      </div>
-                    </div>
-                  </div>
-                  <a
-                    href={`https://wa.me/${kaderContact.noHp || '6281367895678'}?text=Halo%20${encodeURIComponent(kaderContact.nama || 'Ibu Kader')},%20saya%20ingin%20bertanya%20seputar%20posyandu`}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="px-4 py-1.5 rounded-full bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold shadow-2xs transition-colors"
-                  >
-                    Chat WA
-                  </a>
-                </div>
-              </div>
-            </div>
-
-            {/* Right: Map Embed */}
-            <div className="lg:col-span-6">
-              <div className="rounded-3xl bg-white border border-rose-200 p-4 shadow-sm space-y-3">
-                <div className="flex items-center justify-between px-2">
-                  <div className="flex items-center gap-2">
-                    <span className="w-2.5 h-2.5 rounded-full bg-rose-500 animate-pulse" />
-                    <span className="font-serif font-bold text-xs text-slate-900">Denah Balai RW 03 Sukamaju</span>
-                  </div>
-                  <a
-                    href="https://maps.google.com/?q=Balai+Pertemuan+RW+03+Sukamaju"
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="text-[11px] text-rose-600 font-bold hover:underline flex items-center gap-1"
-                  >
-                    <span>Google Maps</span>
-                    <ExternalLink className="w-3 h-3" />
-                  </a>
-                </div>
-
-                <div className="w-full h-80 rounded-2xl bg-rose-50 overflow-hidden relative border border-rose-100">
-                  <iframe
-                    title="Peta Lokasi Posyandu Melati"
-                    src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3984.498457639535!2d104.761000!3d-2.930000!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x0%3A0x0!2zMsKwNTUnNDguMCJTIDEwNMKwNDUnMzkuNiJF!5e0!3m2!1sid!2sid!4v1680000000000!5m2!1sid!2sid"
-                    className="w-full h-full border-0"
-                    loading="lazy"
-                    referrerPolicy="no-referrer-when-downgrade"
-                  />
-                  <div className="absolute bottom-3 left-3 bg-white/95 px-3 py-1.5 rounded-xl border border-rose-200 text-[11px] font-bold text-slate-800 shadow-2xs flex items-center gap-1.5">
-                    <MapPin className="w-3.5 h-3.5 text-rose-600" />
-                    <span>Balai Warga RW 03 Sukamaju</span>
-                  </div>
-                </div>
-
-                <p className="text-[11px] text-slate-500 px-2 leading-relaxed">
-                  Akses jalan mudah dijangkau kendaraan roda dua &amp; empat warga. Area parkir luas tersedia.
-                </p>
-              </div>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* ========================================================================= */}
-      {/* 11.5 GALERI DOKUMENTASI KEGIATAN (Tilted Grid Hero 3D Curved Row)        */}
-      {/* ========================================================================= */}
-      <section id="galeri" className="py-16 sm:py-20 bg-white border-t border-rose-100 overflow-hidden">
+      <section id="galeri" className="py-16 sm:py-20 bg-white border-b border-stone-200/80 overflow-hidden scroll-mt-20">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mb-10 text-center space-y-3">
           <h2 className="font-serif text-3xl sm:text-4xl font-bold text-slate-900 tracking-tight">
-            Dokumentasi &amp; Galeri Pelayanan
+            {t.gallery.title}
           </h2>
           <p className="text-sm text-slate-600 max-w-2xl mx-auto leading-relaxed">
-            Potret kehangatan dan dedikasi tim bidan bersama para kader dalam mendampingi tumbuh kembang buah hati, ibu hamil, serta kebugaran lansia di lingkungan RW 03 Sukamaju.
+            {t.gallery.desc}
           </p>
         </div>
 
@@ -660,23 +517,79 @@ export default function LandingPage() {
           gap={6}
           curve={75}
           fade={14}
-          className="h-[460px] sm:h-[520px] lg:h-[560px] w-full bg-gradient-to-b from-rose-50/25 via-white to-white"
+          className="h-[460px] sm:h-[520px] lg:h-[560px] w-full bg-gradient-to-b from-stone-50/40 via-white to-white"
         >
           <div className="relative z-10 flex h-full flex-col items-center justify-between py-10 text-center pointer-events-none">
             <div className="px-6 space-y-1 pointer-events-auto">
-              <span className="text-[11px] font-bold uppercase tracking-widest text-rose-600">
-                Dokumentasi Terpadu Posyandu Melati
+              <span className="text-[11px] font-bold uppercase tracking-widest text-[#80000f]">
+                Ekosistem Posyandu Terpadu
               </span>
             </div>
             <p className="max-w-md text-balance px-6 text-xs text-slate-400 font-medium pointer-events-auto">
-              Aliran dokumentasi penimbangan balita, bimbingan ibu hamil, senam lansia, dan menu gizi PMT.
+              Pencegahan stunting, pemantauan kurva KMS WHO, dan penyaluran menu gizi tambahan secara transparan.
             </p>
           </div>
         </TiltedGridHero>
       </section>
 
       {/* ========================================================================= */}
-      {/* MODAL LIGHTBOX DETAIL 3-CARD LAYANAN                                      */}
+      {/* 7. PERTANYAAN UMUM (FAQ) SEPUTAR POSYANDUGO (Latar Maroon)                 */}
+      {/* ========================================================================= */}
+      <section id="faq" className="relative py-20 sm:py-24 bg-[#80000f] text-white border-b-0 scroll-mt-20 overflow-hidden">
+        {/* Subtle Ambient Radial Highlight */}
+        <div className="absolute inset-0 pointer-events-none bg-[radial-gradient(ellipse_75%_50%_at_50%_0%,rgba(255,255,255,0.08),transparent)]" />
+
+        <div className="relative z-10 max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="text-center max-w-2xl mx-auto mb-12 space-y-3">
+            <h2 className="font-serif text-3xl sm:text-4xl font-bold text-white tracking-tight">
+              {t.faq.title}
+            </h2>
+            <p className="text-sm text-rose-100/90 leading-relaxed">
+              {t.faq.desc}
+            </p>
+          </div>
+
+          {/* FAQ Accordion List (Kartu Putih Elegan di atas Kanvas Maroon) */}
+          <div className="space-y-3.5">
+            {t.faq.items.map((item, idx) => {
+              const isOpen = openFaqIndex === idx;
+              return (
+                <div
+                  key={idx}
+                  className="rounded-2xl bg-white border border-stone-200/90 shadow-md overflow-hidden transition-all text-slate-800"
+                >
+                  <button
+                    type="button"
+                    onClick={() => toggleFaq(idx)}
+                    className="w-full p-5 sm:p-6 text-left flex items-center justify-between gap-4 cursor-pointer hover:bg-stone-50/80 transition-colors"
+                  >
+                    <span className="font-bold text-slate-900 text-sm sm:text-base leading-snug">
+                      {item.question}
+                    </span>
+                    <span
+                      className={`w-8 h-8 rounded-full flex items-center justify-center shrink-0 border transition-transform duration-200 ${
+                        isOpen
+                          ? 'bg-[#80000f] text-white border-[#80000f] rotate-180'
+                          : 'bg-stone-100 text-slate-600 border-stone-200'
+                      }`}
+                    >
+                      <ChevronDown className="w-4 h-4" />
+                    </span>
+                  </button>
+                  {isOpen && (
+                    <div className="px-5 sm:px-6 pb-6 pt-1 text-xs sm:text-sm text-slate-600 leading-relaxed border-t border-stone-100 bg-[#fffdfd]">
+                      {item.answer}
+                    </div>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      </section>
+
+      {/* ========================================================================= */}
+      {/* 8. MODAL LIGHTBOX DETAIL FITUR                                            */}
       {/* ========================================================================= */}
       {activeModalCard && (
         <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4">
@@ -698,10 +611,10 @@ export default function LandingPage() {
             <div className="p-6 space-y-4">
               <div>
                 <p className="text-xs font-bold uppercase tracking-wider text-rose-600 mb-1">
-                  {activeModalCard.category}
+                  Modul #{activeModalCard.number} &bull; {activeModalCard.title}
                 </p>
                 <h3 className="font-serif text-xl font-bold text-slate-900">
-                  {activeModalCard.title}
+                  {activeModalCard.headline}
                 </h3>
                 <p className="text-xs text-slate-600 leading-relaxed mt-2">
                   {activeModalCard.description}
@@ -709,7 +622,7 @@ export default function LandingPage() {
               </div>
 
               <div className="p-3.5 rounded-2xl bg-[#fff8fa] border border-rose-100 space-y-2">
-                <div className="text-xs font-bold text-slate-900">Protokol Pelayanan Unggulan:</div>
+                <div className="text-xs font-bold text-slate-900">Keunggulan Modul:</div>
                 <ul className="space-y-1.5 text-xs text-slate-600">
                   {activeModalCard.features.map((feat: string, idx: number) => (
                     <li key={idx} className="flex items-center gap-2">
@@ -722,14 +635,14 @@ export default function LandingPage() {
 
               <div className="pt-2 flex items-center justify-between text-xs">
                 <div>
-                  <span className="text-slate-400 block text-[11px]">Jadwal Pelayanan</span>
-                  <span className="font-bold text-slate-800">{activeModalCard.schedule}</span>
+                  <span className="text-slate-400 block text-[11px]">Penanggung Jawab</span>
+                  <span className="font-bold text-slate-800">{activeModalCard.lead}</span>
                 </div>
                 <button
                   onClick={() => setActiveModalCard(null)}
-                  className="px-5 py-2.5 rounded-full bg-rose-500 hover:bg-rose-600 text-white font-bold text-xs transition-colors"
+                  className="px-5 py-2.5 rounded-full bg-[#80000f] hover:bg-[#9c0013] text-white font-bold text-xs shadow-md shadow-rose-950/20 transition-colors"
                 >
-                  Tutup
+                  {lang === 'id' ? 'Tutup' : 'Close'}
                 </button>
               </div>
             </div>
@@ -738,11 +651,11 @@ export default function LandingPage() {
       )}
 
       {/* ========================================================================= */}
-      {/* 12. PHOENIX CHILDREN'S EXACT REPLICA FOOTER (Curved Arch Wave Transition)  */}
+      {/* 9. FOOTER SAAS PLATFORM                                                   */}
       {/* ========================================================================= */}
       <footer className="relative bg-white text-slate-700 text-xs overflow-hidden">
-        {/* Soft Pastel Pink Curved Wave Top Divider (Pink Theme) */}
-        <div className="w-full bg-[#fff0f3] overflow-hidden leading-none select-none">
+        {/* Maroon Wave Transition Divider between Gallery and Footer */}
+        <div className="w-full bg-[#80000f] overflow-hidden leading-none select-none">
           <svg
             viewBox="0 0 1440 90"
             className="w-full h-12 sm:h-16 lg:h-20 text-white fill-current block"
@@ -754,147 +667,101 @@ export default function LandingPage() {
 
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10 pt-8 sm:pt-10 pb-8">
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-10 items-start">
-            {/* Left Section: Logo + 2 Columns Links + Social Media Icons */}
+            {/* Left Section: Logo + 3 Columns Links */}
             <div className="lg:col-span-8 space-y-6">
-              {/* Brand Header with Real Posyandu Logo */}
-              <div className="flex items-center gap-3.5">
+              {/* Brand Header with Real Posyandu Logo (Tanpa Bingkai & Transparan) */}
+              <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3">
                 <img
-                  src="/images/logo-posyandu.png"
-                  alt="Logo Posyandu Melati"
-                  className="h-14 sm:h-16 w-auto object-contain shrink-0 drop-shadow-sm"
+                  src="/images/logo-posyandugo-maroon.png"
+                  alt="Logo PosyanduGo"
+                  className="h-7 sm:h-8 w-auto object-contain"
                 />
-                <div>
-                  <h3 className="font-serif font-black text-2xl sm:text-3xl text-slate-900 tracking-tight leading-none">
-                    Posyandu <span className="text-rose-600">Melati</span>
-                  </h3>
-                  <p className="text-[11px] font-sans text-slate-500 font-semibold tracking-wider uppercase mt-1">
-                    Kesehatan Ibu &amp; Anak &bull; RW 03 Sukamaju
+                <span className="text-slate-400 hidden sm:inline">|</span>
+                <p className="text-[11px] font-sans text-slate-500 font-semibold tracking-wider uppercase">
+                  {t.footer.tagline}
+                </p>
+              </div>
+
+              {/* 3 Clean Columns: Tentang, Jelajahi, Layanan */}
+              <div className="grid grid-cols-1 sm:grid-cols-12 gap-8 pt-2 text-xs text-slate-600">
+                {/* Kolom 1: Penjelasan Tentang PosyanduGo (Sejajar Rata Kiri-Kanan & Luas Proporsional) */}
+                <div className="sm:col-span-5 space-y-2.5">
+                  <div className="font-bold text-slate-900 text-xs uppercase tracking-wider text-[#80000f]">
+                    {t.footer.aboutTitle}
+                  </div>
+                  <p className="text-slate-600 text-xs leading-relaxed text-justify">
+                    {t.footer.aboutDesc}
                   </p>
                 </div>
-              </div>
 
-              {/* 2 Side-by-Side Clean Links Columns */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-12 gap-y-3 pt-2 text-xs font-semibold text-slate-600">
-                <div className="space-y-2.5">
+                {/* Kolom 2: Jelajahi */}
+                <div className="sm:col-span-3 space-y-2.5 font-semibold">
+                  <div className="font-bold text-slate-900 text-xs uppercase tracking-wider text-slate-700">
+                    {t.footer.exploreTitle}
+                  </div>
                   <div>
-                    <a href="#kontak" className="hover:text-rose-600 transition-colors">
-                      Contact Us (Hubungi Kami)
+                    <Link href="/" className="hover:text-[#80000f] transition-colors">
+                      {t.footer.links.home}
+                    </Link>
+                  </div>
+                  <div>
+                    <a href="#cara-kerja" className="hover:text-[#80000f] transition-colors">
+                      {t.footer.links.howItWorks}
                     </a>
                   </div>
                   <div>
-                    <a href="tel:081278901234" className="hover:text-rose-600 transition-colors text-slate-900 font-bold">
-                      Scheduling &amp; Hotline: (0812) 7890-1234
+                    <a href="#fitur-saas" className="hover:text-[#80000f] transition-colors">
+                      {t.footer.links.features}
                     </a>
                   </div>
                   <div>
-                    <a href="#kontak" className="hover:text-rose-600 transition-colors">
-                      Phone Directory (Bidan &amp; Kader)
+                    <a href="#galeri" className="hover:text-[#80000f] transition-colors">
+                      {t.footer.links.documentation}
                     </a>
                   </div>
                   <div>
-                    <a href="#tentang" className="hover:text-rose-600 transition-colors">
-                      About Us (Tentang Posyandu)
-                    </a>
-                  </div>
-                  <div>
-                    <a href="#jadwal" className="hover:text-rose-600 transition-colors">
-                      Manage Health Preference
+                    <a href="#faq" className="hover:text-[#80000f] transition-colors">
+                      {t.footer.links.faq}
                     </a>
                   </div>
                 </div>
 
-                <div className="space-y-2.5">
+                {/* Kolom 3: Layanan */}
+                <div className="sm:col-span-4 space-y-2.5 font-semibold">
+                  <div className="font-bold text-slate-900 text-xs uppercase tracking-wider text-slate-700">
+                    {t.footer.servicesTitle}
+                  </div>
                   <div>
-                    <a href="#layanan-opsi" className="hover:text-rose-600 transition-colors">
-                      Pemantauan Balita &amp; KMS WHO
+                    <a href="#fitur-saas" className="hover:text-[#80000f] transition-colors">
+                      {t.footer.links.ekms}
                     </a>
                   </div>
                   <div>
-                    <a href="#layanan-opsi" className="hover:text-rose-600 transition-colors">
-                      Ibu Hamil &amp; Konseling Laktasi
+                    <a href="#fitur-saas" className="hover:text-[#80000f] transition-colors">
+                      {t.footer.links.saw}
                     </a>
                   </div>
                   <div>
-                    <a href="#layanan-opsi" className="hover:text-rose-600 transition-colors">
-                      Posyandu Lansia Sehat
+                    <a href="#fitur-saas" className="hover:text-[#80000f] transition-colors">
+                      {t.footer.links.screening}
                     </a>
                   </div>
                   <div>
-                    <a href="#layanan-opsi" className="hover:text-rose-600 transition-colors">
-                      Menu Gizi Tambahan PMT &amp; MBG
+                    <a href="#cara-kerja" className="hover:text-[#80000f] transition-colors">
+                      {t.footer.links.kop}
+                    </a>
+                  </div>
+                  <div>
+                    <a href="#cara-kerja" className="hover:text-[#80000f] transition-colors">
+                      {t.footer.links.dashboard}
+                    </a>
+                  </div>
+                  <div>
+                    <a href="#fitur-saas" className="hover:text-[#80000f] transition-colors">
+                      {t.footer.links.stunting}
                     </a>
                   </div>
                 </div>
-              </div>
-
-              {/* 5 Dark Squircle Social Media Buttons */}
-              <div className="flex items-center gap-2.5 pt-3">
-                {/* Facebook */}
-                <a
-                  href="https://facebook.com"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  aria-label="Facebook Posyandu Melati"
-                  className="w-9 h-9 rounded-lg bg-[#182a3a] hover:bg-rose-600 text-white flex items-center justify-center transition-colors shadow-2xs"
-                >
-                  <svg className="w-4 h-4 fill-current" viewBox="0 0 24 24">
-                    <path d="M22 12c0-5.52-4.48-10-10-10S2 6.48 2 12c0 4.84 3.44 8.87 8 9.8V15H7v-3h3V9.5C10 6.57 11.76 5 14.43 5c1.28 0 2.62.23 2.62.23v2.88h-1.48c-1.45 0-1.9.9-1.9 1.83V12h3.25l-.52 3H13.67v6.8c4.56-.93 8-4.96 8-9.8z"/>
-                  </svg>
-                </a>
-
-                {/* Instagram */}
-                <a
-                  href="https://instagram.com"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  aria-label="Instagram Posyandu Melati"
-                  className="w-9 h-9 rounded-lg bg-[#182a3a] hover:bg-rose-600 text-white flex items-center justify-center transition-colors shadow-2xs"
-                >
-                  <svg className="w-4 h-4 fill-none stroke-current stroke-2" viewBox="0 0 24 24">
-                    <rect x="2" y="2" width="20" height="20" rx="5" ry="5"/>
-                    <path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z"/>
-                    <line x1="17.5" y1="6.5" x2="17.51" y2="6.5"/>
-                  </svg>
-                </a>
-
-                {/* YouTube */}
-                <a
-                  href="https://youtube.com"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  aria-label="YouTube Posyandu Melati"
-                  className="w-9 h-9 rounded-lg bg-[#182a3a] hover:bg-rose-600 text-white flex items-center justify-center transition-colors shadow-2xs"
-                >
-                  <svg className="w-4 h-4 fill-current" viewBox="0 0 24 24">
-                    <path d="M21.58 7.19a2.5 2.5 0 0 0-1.76-1.77C18.26 5 12 5 12 5s-6.26 0-7.82.42A2.5 2.5 0 0 0 2.42 7.19C2 8.76 2 12 2 12s0 3.24.42 4.81a2.5 2.5 0 0 0 1.76 1.77C5.74 19 12 19 12 19s6.26 0 7.82-.42a2.5 2.5 0 0 0 1.76-1.77C22 15.24 22 12 22 12s0-3.24-.42-4.81zM10 15V9l5.2 3-5.2 3z"/>
-                  </svg>
-                </a>
-
-                {/* LinkedIn */}
-                <a
-                  href="https://linkedin.com"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  aria-label="LinkedIn Posyandu Melati"
-                  className="w-9 h-9 rounded-lg bg-[#182a3a] hover:bg-rose-600 text-white flex items-center justify-center transition-colors shadow-2xs"
-                >
-                  <svg className="w-4 h-4 fill-current" viewBox="0 0 24 24">
-                    <path d="M19 3a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h14m-.5 15.5v-5.3a3.26 3.26 0 0 0-3.26-3.26c-.85 0-1.84.52-2.28 1.3v-1.11h-2.79v8.37h2.79v-4.93c0-.77.62-1.4 1.39-1.4a1.4 1.4 0 0 1 1.4 1.4v4.93h2.75M6.46 8.76a1.53 1.53 0 0 0 0-3.06 1.53 1.53 0 0 0 0 3.06m1.39 9.74v-8.37H5.07v8.37h2.78z"/>
-                  </svg>
-                </a>
-
-                {/* X (Twitter) */}
-                <a
-                  href="https://x.com"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  aria-label="X Posyandu Melati"
-                  className="w-9 h-9 rounded-lg bg-[#182a3a] hover:bg-rose-600 text-white flex items-center justify-center transition-colors shadow-2xs"
-                >
-                  <svg className="w-3.5 h-3.5 fill-current" viewBox="0 0 24 24">
-                    <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/>
-                  </svg>
-                </a>
               </div>
             </div>
 
@@ -953,21 +820,21 @@ export default function LandingPage() {
             </div>
           </div>
 
-          {/* Copyright Bottom Bar & CHAT WITH US Button */}
+          {/* Copyright Bottom Bar & Konsultasi PosyanduGo Button */}
           <div className="mt-12 pt-6 border-t border-slate-200/80 flex flex-col sm:flex-row items-center justify-between gap-4 text-slate-500 text-[11px]">
             <p>
-              &copy; 2026 Posyandu Melati RW 03. All Rights Reserved. | <a href="#tentang" className="hover:underline">Standar Pelayanan &amp; Kebijakan Privasi</a>
+              {t.footer.copyright}
             </p>
 
-            {/* Warm Golden Amber "CHAT WITH US" Button (Exact Phoenix Children's Style) */}
+            {/* Warm Golden Amber "KONSULTASI POSYANDUGO" Button */}
             <a
-              href="https://wa.me/6281278901234?text=Halo%20Bidan%20Siti%20Rahma,%20saya%20warga%20RW%2003%20ingin%20berkonsultasi"
+              href="https://wa.me/6281234567890?text=Halo%20Tim%20PosyanduGo,%20saya%20ingin%20berkonsultasi%20mengenai%20platform%20SaaS%20PosyanduGo"
               target="_blank"
               rel="noopener noreferrer"
-              className="inline-flex items-center gap-2 px-6 py-2.5 rounded-full bg-[#f4b63f] hover:bg-[#e6a832] text-slate-900 font-bold text-xs uppercase tracking-wider shadow-md hover:shadow-lg transition-all hover:scale-105 active:scale-95 shrink-0"
+              className="inline-flex items-center gap-2 px-6 py-2.5 rounded-full bg-[#f4b63f] hover:bg-[#e6a832] text-slate-900 font-bold text-xs uppercase tracking-wider shadow-md hover:shadow-lg transition-all hover:scale-105 active:scale-95 shrink-0 cursor-pointer"
             >
               <MessageCircle className="w-4 h-4 fill-slate-900 stroke-none" />
-              <span>Chat With Us</span>
+              <span>{t.footer.consultButton}</span>
             </a>
           </div>
         </div>

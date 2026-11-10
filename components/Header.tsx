@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect, useRef } from 'react';
-import { useRouter } from 'next/navigation';
+import { useRouter, usePathname } from 'next/navigation';
 import {
   Search,
   Baby,
@@ -24,6 +24,8 @@ interface HeaderProps {
 export default function Header({
 }: HeaderProps) {
   const router = useRouter();
+  const pathname = usePathname();
+  const [isSuperAdmin, setIsSuperAdmin] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [isSearchOpen, setIsSearchOpen] = useState(false);
   const [balitaList, setBalitaList] = useState<Balita[]>([]);
@@ -32,14 +34,21 @@ export default function Header({
   const searchContainerRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
-  // Load data for interactive search
+  // Sync role and load data for interactive search
   useEffect(() => {
     if (typeof window !== 'undefined') {
+      try {
+        const authUser = JSON.parse(localStorage.getItem('posyandu_auth_user') || '{}');
+        setIsSuperAdmin(authUser?.role === 'super_admin');
+      } catch {}
+
       setBalitaList(PosyanduStore.getBalita());
       setBumilList(PosyanduStore.getBumil());
       setLansiaList(PosyanduStore.getLansia());
     }
   }, []);
+
+  const hideSearchBar = isSuperAdmin || (pathname ? pathname.startsWith('/super-admin') : false);
 
   // Listen to outside click to close search dropdown
   useEffect(() => {
@@ -128,13 +137,22 @@ export default function Header({
             className="w-7 h-7 object-contain"
           />
           <span className="font-serif font-black text-xs text-slate-900 tracking-wider hidden sm:inline-block">
-            POSYANDU <span className="text-[#80000f]">MELATI</span>
+            {hideSearchBar ? (
+              <>
+                PUSKESMAS <span className="text-[#80000f]">PEMBINA</span>
+              </>
+            ) : (
+              <>
+                POSYANDU <span className="text-[#80000f]">MELATI</span>
+              </>
+            )}
           </span>
         </div>
       </div>
 
-      {/* Interactive Search Bar */}
-      <div className="flex items-center gap-3">
+      {/* Interactive Search Bar (Hanya untuk Admin Posyandu operasional, dihapus pada navbar Super Admin) */}
+      {!hideSearchBar ? (
+        <div className="flex items-center gap-3">
 
         <div ref={searchContainerRef} className="relative w-48 sm:w-72 md:w-80">
           <div className="relative w-full">
@@ -306,6 +324,12 @@ export default function Header({
         )}
       </div>
       </div>
+      ) : (
+        <div className="hidden sm:flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-[#fff0f2] border border-[#fce1e4] text-[#80000f] text-xs font-bold shadow-2xs">
+          <span>👑</span>
+          <span className="font-serif tracking-tight">Supervisi Puskesmas Pembina</span>
+        </div>
+      )}
     </header>
   );
 }

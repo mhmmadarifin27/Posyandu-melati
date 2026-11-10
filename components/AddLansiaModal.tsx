@@ -5,6 +5,7 @@ import { X, Activity, Check, HeartPulse, User } from 'lucide-react';
 import { Lansia, PemeriksaanLansia } from '@/types/posyandu';
 import { PosyanduStore } from '@/lib/supabase';
 import { toast } from '@/components/ui/custom-toast';
+import { sanitizeText } from '@/lib/utils';
 
 interface AddLansiaModalProps {
   isOpen: boolean;
@@ -37,6 +38,7 @@ export default function AddLansiaModal({
     'Anjuran gizi rendah purin dan senam lansia rutin'
   );
   const [petugas, setPetugas] = useState<string>('Bidan Desa / Kader Posyandu Melati');
+  const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
 
   useEffect(() => {
     if (selectedLansiaId) {
@@ -71,34 +73,59 @@ export default function AddLansiaModal({
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
 
-    const record: PemeriksaanLansia = {
-      id: `plan-${Date.now()}`,
-      lansiaId,
-      tanggalPeriksa,
-      beratBadan,
-      tinggiBadan,
-      imt,
-      statusGizi,
-      tensiSistolik,
-      tensiDiastolik,
-      statusTensi,
-      gulaDarah,
-      statusGulaDarah,
-      kolesterol,
-      asamUrat,
-      keluhan,
-      tindakanEdukasi,
-      petugas,
-    };
+    if (isSubmitting) return;
 
-    PosyanduStore.addPemeriksaanLansia(record);
-    const selectedLansia = lansiaList.find((l) => l.id === lansiaId);
-    toast.success(
-      'Pemeriksaan Lansia Berhasil Disimpan',
-      `Tensi: ${tensiSistolik}/${tensiDiastolik} mmHg (${statusTensi}) untuk ${selectedLansia?.nama || 'Lansia'}`
-    );
-    onSuccess();
-    onClose();
+    // Validasi Batas Medis Pemeriksaan Lansia
+    if (beratBadan < 20 || beratBadan > 200) {
+      toast.warning('Batas Klinis', 'Berat badan lansia harus berada dalam rentang wajar (20 - 200 kg).');
+      return;
+    }
+    if (tinggiBadan < 100 || tinggiBadan > 220) {
+      toast.warning('Batas Klinis', 'Tinggi badan lansia harus berada dalam rentang wajar (100 - 220 cm).');
+      return;
+    }
+    if (tensiSistolik < 60 || tensiSistolik > 260 || tensiDiastolik < 40 || tensiDiastolik > 160) {
+      toast.warning('Batas Klinis', 'Tekanan darah tidak realistis secara klinis (Sistolik: 60-260, Diastolik: 40-160 mmHg).');
+      return;
+    }
+    if (gulaDarah < 30 || gulaDarah > 600) {
+      toast.warning('Batas Klinis', 'Kadar gula darah harus berada dalam rentang klinis (30 - 600 mg/dL).');
+      return;
+    }
+
+    setIsSubmitting(true);
+    try {
+      const record: PemeriksaanLansia = {
+        id: `plan-${Date.now()}`,
+        lansiaId,
+        tanggalPeriksa,
+        beratBadan,
+        tinggiBadan,
+        imt,
+        statusGizi,
+        tensiSistolik,
+        tensiDiastolik,
+        statusTensi,
+        gulaDarah,
+        statusGulaDarah,
+        kolesterol,
+        asamUrat,
+        keluhan: sanitizeText(keluhan),
+        tindakanEdukasi: sanitizeText(tindakanEdukasi),
+        petugas: sanitizeText(petugas),
+      };
+
+      PosyanduStore.addPemeriksaanLansia(record);
+      const selectedLansia = lansiaList.find((l) => l.id === lansiaId);
+      toast.success(
+        'Pemeriksaan Lansia Berhasil Disimpan',
+        `Tensi: ${tensiSistolik}/${tensiDiastolik} mmHg (${statusTensi}) untuk ${selectedLansia?.nama || 'Lansia'}`
+      );
+      onSuccess();
+      onClose();
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
@@ -318,10 +345,11 @@ export default function AddLansiaModal({
             </button>
             <button
               type="submit"
-              className="flex items-center gap-2 px-6 py-2.5 rounded-xl bg-[#80000f] hover:bg-[#66000c] text-white font-bold shadow-md shadow-[#80000f]/20 transition-all"
+              disabled={isSubmitting}
+              className="flex items-center gap-2 px-6 py-2.5 rounded-xl bg-[#80000f] hover:bg-[#66000c] text-white font-bold shadow-md shadow-[#80000f]/20 transition-all hover:scale-[1.02] disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
             >
               <Check className="w-4 h-4" />
-              <span>Simpan Pemeriksaan Lansia</span>
+              <span>{isSubmitting ? 'Menyimpan...' : 'Simpan Pemeriksaan Lansia'}</span>
             </button>
           </div>
         </form>

@@ -3,11 +3,11 @@ import './globals.css';
 import { ToastProvider } from '@/components/ui/custom-toast';
 
 export const metadata: Metadata = {
-  title: 'SIP-MBG | Sistem Informasi Posyandu & Rekomendasi MBG Cerdas',
+  title: 'PosyanduGo | Platform SaaS Manajemen Posyandu Multi-Tenant Terpadu',
   description:
-    'Sistem Informasi Posyandu Digital terintegrasi Rekomendasi Cerdas Prioritas Menu Tambahan MBG menggunakan metode SAW & TOPSIS',
+    'Platform SaaS Posyandu modern terintegrasi e-KMS WHO, SPK Rekomendasi Menu MBG (metode SAW), dan rekapitulasi laporan Puskesmas se-Indonesia.',
   icons: {
-    icon: '/favicon.ico',
+    icon: '/images/logo-posyandugo-maroon.png',
   },
 };
 
@@ -18,7 +18,7 @@ export default function RootLayout({
 }) {
   return (
     <html lang="id" className="h-full">
-      <body className="min-h-full flex flex-col bg-slate-50 text-slate-900 antialiased">
+      <body className="min-h-full flex flex-col bg-[#faf6f6] text-slate-900 antialiased">
         {children}
         <ToastProvider />
       </body>

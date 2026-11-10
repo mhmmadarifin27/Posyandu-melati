@@ -13,7 +13,6 @@ import {
   CheckCircle2,
   AlertTriangle,
   Calendar,
-  Clock,
   Play,
   Square,
   Users,
@@ -21,63 +20,48 @@ import {
   ShieldAlert,
   PanelsTopLeft,
   Image as ImageIcon,
+  Building2,
+  LineChart,
+  ClipboardCheck,
 } from 'lucide-react';
 import Sidebar from '@/components/Sidebar';
 import Header from '@/components/Header';
 import AddWeighingModal from '@/components/AddWeighingModal';
 import KMSLegendCard from '@/components/KMSLegendCard';
 import { PosyanduStore } from '@/lib/supabase';
-import { LandingStore, PosyanduScheduleConfig, DEFAULT_SCHEDULE_CONFIG } from '@/lib/landing-store';
-import { Balita, PemeriksaanBalita, IbuHamil, Lansia, UserRole } from '@/types/posyandu';
+import { Balita, PemeriksaanBalita, IbuHamil, Lansia, UserRole, PosyanduTenant } from '@/types/posyandu';
 
 export default function DashboardPage() {
-  const [currentRole, setCurrentRole] = useState<UserRole>('bidan');
+  const [currentRole, setCurrentRole] = useState<UserRole>('admin_posyandu');
+  const [tenantName, setTenantName] = useState('Posyandu Melati');
+  const [tenantsList, setTenantsList] = useState<PosyanduTenant[]>([]);
+
   const [balitaList, setBalitaList] = useState<Balita[]>([]);
   const [pemeriksaanList, setPemeriksaanList] = useState<PemeriksaanBalita[]>([]);
   const [bumilList, setBumilList] = useState<IbuHamil[]>([]);
   const [lansiaList, setLansiaList] = useState<Lansia[]>([]);
   const [isWeighingModalOpen, setIsWeighingModalOpen] = useState(false);
-  // Default SSR aman untuk mencegah Hydration Mismatch antara server dan localStorage client
-  const [scheduleConfig, setScheduleConfig] = useState<PosyanduScheduleConfig>(DEFAULT_SCHEDULE_CONFIG);
 
-  const loadData = () => {
-    setBalitaList(PosyanduStore.getBalita());
-    setPemeriksaanList(PosyanduStore.getPemeriksaan());
-    setBumilList(PosyanduStore.getBumil());
-    setLansiaList(PosyanduStore.getLansia());
+  const loadData = (filter?: string) => {
+    setBalitaList(PosyanduStore.getBalita(filter));
+    setPemeriksaanList(PosyanduStore.getPemeriksaan(filter));
+    setBumilList(PosyanduStore.getBumil(filter));
+    setLansiaList(PosyanduStore.getLansia(filter));
+    setTenantsList(PosyanduStore.getPosyanduList());
   };
 
   useEffect(() => {
-    loadData();
-    // Sinkronkan jadwal dari localStorage setelah komponen ter-mount (Client-side only)
-    setScheduleConfig(LandingStore.getSchedule());
-
-    const handleLandingUpdate = () => {
-      setScheduleConfig(LandingStore.getSchedule());
-    };
-    window.addEventListener('posyandu_landing_updated', handleLandingUpdate);
-    window.addEventListener('storage', handleLandingUpdate);
-    return () => {
-      window.removeEventListener('posyandu_landing_updated', handleLandingUpdate);
-      window.removeEventListener('storage', handleLandingUpdate);
-    };
-  }, []);
-
-  // Load saved role preference on mount
-  useEffect(() => {
     if (typeof window !== 'undefined') {
-      const savedRole = localStorage.getItem('posyandu_active_role');
-      const savedAuth = localStorage.getItem('posyandu_auth_user');
-      if (savedRole === 'kader' || savedRole === 'bidan') {
-        setCurrentRole(savedRole as UserRole);
-      } else if (savedAuth) {
-        try {
-          const parsed = JSON.parse(savedAuth);
-          if (parsed.role === 'kader' || parsed.role === 'bidan') {
-            setCurrentRole(parsed.role as UserRole);
-          }
-        } catch (e) {}
+      const user = PosyanduStore.getActiveUser();
+      if (user?.role === 'super_admin') {
+        window.location.replace('/super-admin/dashboard');
+        return;
       }
+      const name = user?.posyanduNama || user?.posyandu || 'Posyandu Melati';
+      setTenantName(name);
+      loadData(name);
+    } else {
+      loadData();
     }
   }, []);
 
@@ -153,119 +137,71 @@ export default function DashboardPage() {
             <div>
               <div className="flex items-center gap-2.5 flex-wrap">
                 <h1 className="font-serif text-3xl sm:text-4xl font-bold text-slate-900 tracking-tight">
-                  {isBidan ? (
-                    <>
-                      Dashboard <span className="text-[#80000f]">Bidan Desa</span>
-                    </>
-                  ) : (
-                    <>
-                      Dashboard <span className="text-[#80000f]">Kader Posyandu</span>
-                    </>
-                  )}
+                  Dashboard <span className="text-[#80000f]">{tenantName}</span>
                 </h1>
-                <span className="px-3 py-1 rounded-full text-[11px] font-extrabold uppercase border shadow-2xs bg-[#80000f] text-white border-[#80000f]">
-                  {isBidan ? '👩‍⚕️ Supervisi Medis' : '🧕 Pelaksana Meja 1-4'}
+                <span
+                  className="px-3 py-1 rounded-full text-[11px] font-extrabold uppercase border shadow-2xs bg-[#80000f] text-white border-[#80000f]"
+                >
+                  🏥 Admin Posyandu Terpadu
                 </span>
               </div>
               <p className="text-xs text-slate-500 mt-1 font-medium">
-                {isBidan
-                  ? 'Pusat supervisi klinis, audit kasus gizi tinggi (Stunting & KEK), sistem rekomendasi menu MBG (SAW), dan pengesahan laporan resmi Puskesmas.'
-                  : 'Pusat operasional pelayanan hari-H Posyandu: registrasi sasaran baru, pencatatan penimbangan balita & lansia, serta pembagian menu MBG.'}
+                Pusat operasional pelayanan {tenantName}: registrasi sasaran, penimbangan e-KMS WHO, kalkulasi rekomendasi MBG (SAW), dan laporan resmi.
               </p>
             </div>
           </div>
 
-          {/* Quick Role-Specific Banner (Keduanya Menggunakan Tema Maroon yang Sama Persis) */}
-          {isBidan ? (
-            /* Banner Bidan: Wewenang Medis & Pelaporan */
-            <div
-              className="p-5 sm:p-6 rounded-3xl shadow-lg border border-[#f8c8c8] flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 text-white"
-              style={{
-                background: 'linear-gradient(135deg, #80000f 0%, #990012 50%, #66000c 100%)',
-                backgroundColor: '#80000f',
-              }}
-            >
-              <div className="flex items-center gap-3.5">
-                <div className="w-11 h-11 rounded-2xl bg-white/20 flex items-center justify-center shrink-0 border border-white/30 shadow-xs text-xl">
-                  👩‍⚕️
-                </div>
-                <div>
-                  <div className="flex items-center gap-2">
-                    <span className="font-extrabold text-sm sm:text-base text-white tracking-tight">
-                      Wewenang Supervisi Bidan &amp; Nakes Puskesmas
-                    </span>
-                    <span className="px-2.5 py-0.5 rounded-full bg-white text-[#80000f] text-[10.5px] font-black uppercase shadow-xs">
-                      Resmi
-                    </span>
-                  </div>
-                  <p className="text-xs text-white/95 mt-1 font-medium leading-relaxed max-w-2xl">
-                    Sebagai Bidan penanggung jawab, Anda berwenang melakukan validasi rujukan stunting/KEK, mengolah rekomendasi menu MBG berbasis SAW, dan menerbitkan laporan PDF resmi ber-kop Puskesmas.
-                  </p>
-                </div>
+          {/* Unit Posyandu Operational Banner */}
+          <div
+            className="p-5 sm:p-6 rounded-3xl shadow-lg border border-[#f8c8c8] flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 text-white"
+            style={{
+              background: 'linear-gradient(135deg, #80000f 0%, #990012 50%, #66000c 100%)',
+              backgroundColor: '#80000f',
+            }}
+          >
+            <div className="flex items-center gap-3.5">
+              <div className="w-11 h-11 rounded-2xl bg-white/20 flex items-center justify-center shrink-0 border border-white/30 shadow-xs text-xl">
+                🏥
               </div>
-              <div className="flex items-center gap-2 flex-wrap">
-                <Link
-                  href="/rekomendasi-mbg"
-                  className="inline-flex items-center gap-1.5 px-4 py-2.5 rounded-full bg-white text-[#80000f] text-xs font-bold hover:bg-[#fff5f6] transition-all shadow-md shrink-0 hover:scale-102"
-                >
-                  <Sparkles className="w-4 h-4 text-[#80000f]" />
-                  <span>Kalkulasi SAW MBG</span>
-                </Link>
-                <Link
-                  href="/laporan"
-                  className="inline-flex items-center gap-1.5 px-4 py-2.5 rounded-full bg-white/15 text-white border border-white/40 text-xs font-bold hover:bg-white/25 transition-all shadow-xs shrink-0"
-                >
-                  <FileSpreadsheet className="w-4 h-4 text-white" />
-                  <span>Cetak Laporan PDF</span>
-                </Link>
+              <div>
+                <div className="flex items-center gap-2">
+                  <span className="font-extrabold text-sm sm:text-base text-white tracking-tight">
+                    Pusat Operasional Terpadu — {tenantName}
+                  </span>
+                  <span className="px-2.5 py-0.5 rounded-full bg-white text-[#80000f] text-[10.5px] font-black uppercase shadow-xs">
+                    Admin Unit
+                  </span>
+                </div>
+                <p className="text-xs text-white/95 mt-1 font-medium leading-relaxed max-w-2xl">
+                  Anda berwenang penuh mengelola registrasi sasaran, penimbangan e-KMS WHO, kalkulasi rekomendasi menu MBG (SAW), dan menerbitkan laporan resmi posyandu.
+                </p>
               </div>
             </div>
-          ) : (
-            /* Banner Kader: Wewenang Operasional Meja 1-4 (Warna Maroon Identik dengan Dashboard Pertama) */
-            <div
-              className="p-5 sm:p-6 rounded-3xl shadow-lg border border-[#f8c8c8] flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 text-white"
-              style={{
-                background: 'linear-gradient(135deg, #80000f 0%, #990012 50%, #66000c 100%)',
-                backgroundColor: '#80000f',
-              }}
-            >
-              <div className="flex items-center gap-3.5">
-                <div className="w-11 h-11 rounded-2xl bg-white/20 flex items-center justify-center shrink-0 border border-white/30 shadow-xs text-xl">
-                  🧕
-                </div>
-                <div>
-                  <div className="flex items-center gap-2">
-                    <span className="font-extrabold text-sm sm:text-base text-white tracking-tight">
-                      Alur Kerja Operasional Kader Posyandu
-                    </span>
-                    <span className="px-2.5 py-0.5 rounded-full bg-white text-[#80000f] text-[10.5px] font-black uppercase shadow-xs">
-                      Meja 1–4
-                    </span>
-                  </div>
-                  <p className="text-xs text-white/95 mt-1 font-medium leading-relaxed max-w-2xl">
-                    Melayani pendaftaran sasaran baru (Meja 1), pengukuran antropometri balita BB/TB/LK (Meja 2), pencatatan rekam penimbangan (Meja 3), dan edukasi orang tua serta pembagian PMT/MBG (Meja 4).
-                  </p>
-                </div>
-              </div>
-              <div className="flex items-center gap-2 flex-wrap">
-                <button
-                  type="button"
-                  onClick={() => setIsWeighingModalOpen(true)}
-                  className="inline-flex items-center gap-1.5 px-4 py-2.5 rounded-full bg-white text-[#80000f] text-xs font-bold hover:bg-[#fff5f6] transition-all shadow-md shrink-0 hover:scale-102 cursor-pointer"
-                >
-                  <Play className="w-3.5 h-3.5 fill-current text-[#80000f]" />
-                  <span>Catat Penimbangan Balita</span>
-                </button>
-                <Link
-                  href="/balita"
-                  className="inline-flex items-center gap-1.5 px-4 py-2.5 rounded-full bg-white/15 text-white border border-white/40 text-xs font-bold hover:bg-white/25 transition-all shadow-xs shrink-0"
-                >
-                  <Users className="w-4 h-4 text-white" />
-                  <span>Daftar Balita Baru</span>
-                </Link>
-              </div>
+            <div className="flex items-center gap-2 flex-wrap">
+              <button
+                type="button"
+                onClick={() => setIsWeighingModalOpen(true)}
+                className="inline-flex items-center gap-1.5 px-4 py-2.5 rounded-full bg-white text-[#80000f] text-xs font-bold hover:bg-[#fff5f6] transition-all shadow-md shrink-0 hover:scale-102 cursor-pointer"
+              >
+                <Play className="w-3.5 h-3.5 fill-current text-[#80000f]" />
+                <span>Catat Timbang</span>
+              </button>
+              <Link
+                href="/rekomendasi-mbg"
+                className="inline-flex items-center gap-1.5 px-4 py-2.5 rounded-full bg-white/20 text-white border border-white/40 text-xs font-bold hover:bg-white/30 transition-all shadow-xs shrink-0"
+              >
+                <Sparkles className="w-4 h-4 text-white" />
+                <span>Kalkulasi SAW MBG</span>
+              </Link>
+              <Link
+                href="/laporan"
+                className="inline-flex items-center gap-1.5 px-4 py-2.5 rounded-full bg-white/20 text-white border border-white/40 text-xs font-bold hover:bg-white/30 transition-all shadow-xs shrink-0"
+              >
+                <FileSpreadsheet className="w-4 h-4 text-white" />
+                <span>Cetak Laporan</span>
+              </Link>
             </div>
-          )}
+          </div>
 
           {/* Filter Bar Periode Sesi Posyandu (Menampilkan data bulan ini & reset ke 0 saat masuk bulan baru yang belum terlaksana) */}
           <div className="p-4 sm:p-5 rounded-3xl bg-white border-2 border-[#fce1e4] shadow-xs flex flex-col md:flex-row md:items-center justify-between gap-4">
@@ -607,84 +543,9 @@ export default function DashboardPage() {
             </div>
           )}
 
-          {/* Middle Section: Widget Peran Khusus */}
+          {/* Section: Prioritas Monitoring & Status Gizi Balita */}
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-5">
-            {/* Widget Kiri: Jadwal & Action */}
-            <div
-              className="lg:col-span-5 rounded-3xl p-6 border-2 border-[#fce1e4] shadow-sm flex flex-col justify-between space-y-4"
-              style={{
-                background: 'linear-gradient(135deg, #ffffff 0%, #fff5f6 50%, #fde8e9 100%)',
-                backgroundColor: '#fff5f6',
-              }}
-            >
-              <div>
-                <div className="flex items-center justify-between">
-                  <div className="text-xs font-bold text-[#80000f] uppercase tracking-wider flex items-center gap-1.5">
-                    <Calendar className="w-3.5 h-3.5" />
-                    <span>Jadwal Posyandu RW 03</span>
-                  </div>
-                  {!isBidan && (
-                    <Link
-                      href="/kelola-jadwal"
-                      className="text-[11px] font-bold text-[#80000f] hover:text-[#66000c] hover:underline px-2.5 py-1 rounded-full bg-white border border-[#fce1e4] shadow-2xs transition-colors"
-                    >
-                      Atur Jadwal
-                    </Link>
-                  )}
-                </div>
-                <h3 suppressHydrationWarning className="font-serif font-black text-slate-900 text-lg sm:text-xl mt-3 leading-snug">
-                  {scheduleConfig.sessionDayName}, {scheduleConfig.sessionDate} {scheduleConfig.sessionMonth} {scheduleConfig.sessionYear}
-                </h3>
-                <p suppressHydrationWarning className="text-xs text-slate-600 mt-1.5 flex items-center gap-1.5 font-medium">
-                  <Clock className="w-3.5 h-3.5 text-[#80000f]" />
-                  <span>{scheduleConfig.sessionTime} &bull; {scheduleConfig.sessionLocation}</span>
-                </p>
-
-                <div className="mt-4 p-3.5 bg-white/80 rounded-2xl border border-[#fce1e4] text-xs text-[#80000f] space-y-1.5 shadow-2xs">
-                  <div className="font-bold flex items-center justify-between">
-                    <span className="text-[#80000f] font-extrabold">Sasaran Utama:</span>
-                    <span suppressHydrationWarning className="text-[10px] text-[#80000f] font-bold px-2 py-0.5 rounded-full bg-[#fce1e4] border border-[#f8c8c8]">
-                      {scheduleConfig.targetSummary}
-                    </span>
-                  </div>
-                  <div className="text-[11.5px] text-slate-700 leading-relaxed">
-                    {isBidan
-                      ? 'Supervisi validasi data penimbangan, deteksi dini kasus gizi buruk (2T/BGM), dan penentuan rujukan puskesmas.'
-                      : 'Pendaftaran balita & lansia di Meja 1, timbang BB/TB di Meja 2, catat hasil di Meja 3, dan bagikan PMT/MBG di Meja 4.'}
-                  </div>
-                </div>
-              </div>
-
-              {isBidan ? (
-                <div className="space-y-2">
-                  <Link
-                    href="/laporan"
-                    className="w-full py-3.5 rounded-2xl bg-[#80000f] hover:bg-[#66000c] text-white font-bold text-xs flex items-center justify-center gap-2 shadow-md shadow-[#80000f]/25 transition-all hover:scale-102"
-                  >
-                    <FileSpreadsheet className="w-3.5 h-3.5" />
-                    <span>Validasi &amp; Cetak Laporan Puskesmas (PDF)</span>
-                  </Link>
-                  <Link
-                    href="/rekomendasi-mbg"
-                    className="w-full py-2.5 rounded-2xl bg-white hover:bg-[#fff5f6] text-[#80000f] border border-[#fce1e4] font-bold text-xs flex items-center justify-center gap-2 shadow-2xs transition-all"
-                  >
-                    <Sparkles className="w-3.5 h-3.5" />
-                    <span>Kalkulasi Rekomendasi Menu MBG (SAW)</span>
-                  </Link>
-                </div>
-              ) : (
-                <button
-                  type="button"
-                  onClick={() => setIsWeighingModalOpen(true)}
-                  className="w-full py-3.5 rounded-2xl bg-[#80000f] hover:bg-[#66000c] text-white font-bold text-xs flex items-center justify-center gap-2 shadow-md shadow-[#80000f]/25 transition-all hover:scale-102 active:scale-98 cursor-pointer"
-                >
-                  <Play className="w-3.5 h-3.5 fill-current" />
-                  <span>Mulai Catat Penimbangan Hari Ini (Meja 2–3)</span>
-                </button>
-              )}
-            </div>
-
-            {/* Widget Kanan: Berbeda Konten Antara Bidan dan Kader */}
+            {/* Widget Utama: Berbeda Konten Antara Bidan dan Kader */}
             {isBidan ? (
               /* Widget Kanan Bidan: Audit Kasus Prioritas & Rekomendasi Klinis */
               <div className="lg:col-span-7 bg-white rounded-3xl p-6 border-2 border-[#fce1e4] shadow-sm space-y-3">
@@ -849,72 +710,8 @@ export default function DashboardPage() {
                 </div>
               </div>
             )}
-          </div>
 
-          {/* Bottom Section: Kader Collaboration & Status Gizi Balita Donut Gauge */}
-          <div className="grid grid-cols-1 lg:grid-cols-12 gap-5">
-            {/* Widget: Kader Collaboration */}
-            <div className="lg:col-span-7 bg-white rounded-3xl p-6 border-2 border-[#fce1e4] shadow-sm space-y-4">
-              <div className="flex items-center justify-between pb-2 border-b border-[#fce1e4]">
-                <div>
-                  <h3 className="font-bold text-slate-900 text-sm sm:text-base">Petugas &amp; Kader Posyandu Melati</h3>
-                  <p className="text-xs text-slate-400">Tim Pelayanan Aktif Pembinaan Puskesmas Pembina</p>
-                </div>
-                <span className="text-xs px-3 py-1 rounded-full bg-[#fce1e4] text-[#80000f] font-bold border border-[#f8c8c8]">
-                  4 Petugas Siaga
-                </span>
-              </div>
-
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                {[
-                  {
-                    name: 'Bdn. Ratna Kusuma, S.ST',
-                    role: 'Bidan Desa & Ahli Gizi',
-                    status: 'Verifikasi Gizi',
-                    color: 'bg-[#fce1e4] text-[#80000f] border border-[#f8c8c8]',
-                    avatar: '👩‍⚕️',
-                  },
-                  {
-                    name: 'Ny. Anisa Rahmawati',
-                    role: 'Ketua Kader Posyandu Melati',
-                    status: 'Meja Timbang (BB/TB)',
-                    color: 'bg-[#fce1e4] text-[#80000f] border border-[#f8c8c8]',
-                    avatar: '🧕',
-                  },
-                  {
-                    name: 'Ny. Siti Rohayati',
-                    role: 'Kader Meja 4 (Konseling MBG)',
-                    status: 'Edukasi Menu',
-                    color: 'bg-[#fff5f6] text-[#80000f] border border-[#fce1e4]',
-                    avatar: '👩',
-                  },
-                  {
-                    name: 'Ny. Nurul Hidayah',
-                    role: 'Kader Meja 1 (Pendaftaran)',
-                    status: 'Registrasi KIA',
-                    color: 'bg-[#fff5f6] text-[#80000f] border border-[#fce1e4]',
-                    avatar: '🧕',
-                  },
-                ].map((k, i) => (
-                  <div key={i} className="flex items-center justify-between p-3 bg-[#fffafb] hover:bg-[#fff5f6] rounded-2xl border border-[#fce1e4] transition-colors">
-                    <div className="flex items-center gap-2.5">
-                      <div className="w-10 h-10 rounded-xl bg-[#fff5f6] flex items-center justify-center text-xl shadow-xs border border-[#fce1e4] shrink-0">
-                        {k.avatar}
-                      </div>
-                      <div className="overflow-hidden">
-                        <div className="font-bold text-slate-900 text-xs truncate">{k.name}</div>
-                        <div className="text-[10.5px] text-slate-400 truncate">{k.role}</div>
-                      </div>
-                    </div>
-                    <span className={`text-[9.5px] font-bold px-2 py-0.5 rounded-full shrink-0 ${k.color}`}>
-                      {k.status}
-                    </span>
-                  </div>
-                ))}
-              </div>
-            </div>
-
-            {/* Widget: Donut Progress Gauge (Status Gizi Balita) */}
+            {/* Widget Kanan: Donut Progress Gauge (Status Gizi Balita) */}
             <div className="lg:col-span-5 bg-white rounded-3xl p-6 border-2 border-[#fce1e4] shadow-sm flex flex-col justify-between space-y-4">
               <div>
                 <h3 className="font-bold text-slate-900 text-sm sm:text-base">
@@ -990,7 +787,7 @@ export default function DashboardPage() {
 
               <div className="p-3 bg-[#fff5f6] border border-[#fce1e4] rounded-2xl text-xs text-[#80000f] text-center font-bold">
                 {ditimbangCount > 0
-                  ? '🎯 Target Bebas Gagal Tumbuh Posyandu Melati 2026'
+                  ? `🎯 Target Bebas Gagal Tumbuh ${tenantName} 2026`
                   : '⏳ Menunggu Pelaksanaan Hari-H Posyandu Periode Ini'}
               </div>
             </div>

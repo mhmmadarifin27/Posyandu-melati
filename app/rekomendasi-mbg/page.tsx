@@ -49,14 +49,26 @@ export default function RekomendasiMBGPage() {
 
   const [isCalcModalOpen, setIsCalcModalOpen] = useState<boolean>(false);
   const [stepDetail, setStepDetail] = useState<SAWStepDetail | null>(null);
+  const [activePosyanduName, setActivePosyanduName] = useState<string>('Posyandu Melati');
+  const [isSuperAdmin, setIsSuperAdmin] = useState<boolean>(false);
 
   const loadData = () => {
-    setBalitaList(PosyanduStore.getBalita());
-    setPemeriksaanList(PosyanduStore.getPemeriksaan());
-    setBumilList(PosyanduStore.getBumil());
-    setBusuiList(PosyanduStore.getBusui());
-    setLansiaList(PosyanduStore.getLansia());
-    setPemeriksaanLansia(PosyanduStore.getPemeriksaanLansia());
+    let filter = 'Posyandu Melati';
+    if (typeof window !== 'undefined') {
+      try {
+        const authUser = JSON.parse(localStorage.getItem('posyandu_auth_user') || '{}');
+        setIsSuperAdmin(authUser?.role === 'super_admin');
+        const resolved = PosyanduStore.resolveActivePosyanduFilter();
+        if (resolved) filter = resolved;
+      } catch {}
+    }
+    setActivePosyanduName(filter);
+    setBalitaList(PosyanduStore.getBalita(filter));
+    setPemeriksaanList(PosyanduStore.getPemeriksaan(filter));
+    setBumilList(PosyanduStore.getBumil(filter));
+    setBusuiList(PosyanduStore.getBusui(filter));
+    setLansiaList(PosyanduStore.getLansia(filter));
+    setPemeriksaanLansia(PosyanduStore.getPemeriksaanLansia(filter));
     setMenuList(PosyanduStore.getMenuMBG());
   };
 
@@ -112,7 +124,7 @@ export default function RekomendasiMBGPage() {
       id: b.id,
       nama: b.nama,
       subjek: 'Balita',
-      posyandu: 'Posyandu Melati',
+      posyandu: b.posyandu || 'Posyandu Melati',
       usia: `${lastP.usiaBulan} bln`,
       kriteriaValues: { C1: c1Score, C2: c2Score, C3: c3Score, C4: c4Score, C5: c5Score },
       alasanKlinis: klinis.length > 0 ? klinis : ['Pemantauan tumbuh kembang rutin'],
@@ -138,7 +150,7 @@ export default function RekomendasiMBGPage() {
       id: bumil.id,
       nama: bumil.nama,
       subjek: 'Bumil',
-      posyandu: 'Posyandu Melati',
+      posyandu: bumil.posyandu || 'Posyandu Melati',
       usia: `${bumil.usiaKehamilanMinggu} mgg (Hamil)`,
       kriteriaValues: { C1: c1Score, C2: c2Score, C3: c3Score, C4: c4Score, C5: c5Score },
       alasanKlinis: klinis.length > 0 ? klinis : ['Pemeriksaan antenatal rutin'],
@@ -163,7 +175,7 @@ export default function RekomendasiMBGPage() {
       id: busui.id,
       nama: busui.nama,
       subjek: 'Busui',
-      posyandu: 'Posyandu Melati',
+      posyandu: busui.posyandu || 'Posyandu Melati',
       usia: `Ibu Menyusui (Bayi ${busui.usiaBayiBulan} bln)`,
       kriteriaValues: { C1: c1Score, C2: c2Score, C3: c3Score, C4: c4Score, C5: c5Score },
       alasanKlinis: klinis.length > 0 ? klinis : ['Pemantauan nifas & laktasi rutin'],
@@ -196,7 +208,7 @@ export default function RekomendasiMBGPage() {
       id: l.id,
       nama: l.nama,
       subjek: 'Lansia',
-      posyandu: 'Posyandu Melati',
+      posyandu: l.posyandu || 'Posyandu Melati',
       usia: `${l.usiaTahun} Thn (Lansia)`,
       kriteriaValues: { C1: c1Score, C2: c2Score, C3: c3Score, C4: c4Score, C5: c5Score },
       alasanKlinis: klinis.length > 0 ? klinis : ['Pemeriksaan lansia berkala'],
@@ -269,35 +281,7 @@ export default function RekomendasiMBGPage() {
         <Header currentRole={currentRole} onRoleChange={setCurrentRole} />
 
         <main className="p-4 sm:p-6 lg:p-8 space-y-6 flex-1 overflow-y-auto max-w-[1600px] mx-auto w-full">
-          {currentRole === 'kader' ? (
-            <div className="p-8 sm:p-12 rounded-3xl bg-white border-2 border-[#fce1e4] shadow-sm text-center max-w-xl mx-auto my-12 space-y-5">
-              <div className="w-16 h-16 rounded-2xl bg-[#fff5f6] border border-[#fce1e4] text-[#80000f] flex items-center justify-center mx-auto shadow-xs">
-                <Lock className="w-8 h-8 text-[#80000f]" />
-              </div>
-              <div className="space-y-2">
-                <span className="px-3 py-1 rounded-full text-[10.5px] font-extrabold uppercase bg-[#fce1e4] text-[#80000f] border border-[#f8c8c8]">
-                  Wewenang Khusus Bidan Desa
-                </span>
-                <h2 className="text-xl font-black text-slate-900 tracking-tight">
-                  Akses Sistem Rekomendasi MBG (SAW) Dibatasi
-                </h2>
-                <p className="text-xs text-slate-600 leading-relaxed max-w-md mx-auto">
-                  Analisis penentuan prioritas penerima Makanan Bergizi Gratis (MBG) berbasis Simple Additive Weighting (SAW) serta penetapan menu klinis merupakan wewenang Bidan Desa / Tenaga Gizi Puskesmas. Kader berfokus pada pencatatan dan penimbangan di Meja 1–4 Posyandu.
-                </p>
-              </div>
-              <div className="pt-2">
-                <Link
-                  href="/dashboard"
-                  className="inline-flex items-center gap-2 px-6 py-3 rounded-full bg-[#80000f] hover:bg-[#66000c] text-white text-xs font-bold transition-all shadow-md hover:scale-102"
-                >
-                  <ArrowLeft className="w-4 h-4" />
-                  <span>Kembali ke Dashboard Kader</span>
-                </Link>
-              </div>
-            </div>
-          ) : (
-            <>
-              {/* Header Card (Maroon Gradient) */}
+          {/* Header Card (Maroon Gradient) */}
           <div className="bg-gradient-to-r from-[#80000f] via-[#990012] to-[#66000c] p-5 sm:p-7 rounded-3xl text-white shadow-md shadow-[#80000f]/25 space-y-5">
             <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
               <div>
@@ -310,10 +294,21 @@ export default function RekomendasiMBGPage() {
                       Sistem Rekomendasi Menu MBG Tambahan (Metode SAW)
                     </h1>
                     <p className="text-xs text-white/90 mt-0.5 font-medium">
-                      Posyandu Melati &bull; Seleksi cerdas alokasi menu bergizi untuk Balita, Ibu Hamil, Ibu Menyusui, dan Lansia
+                      {activePosyanduName} &bull; Seleksi cerdas alokasi menu bergizi untuk Balita, Ibu Hamil, Ibu Menyusui, dan Lansia
                     </p>
                   </div>
                 </div>
+                {isSuperAdmin && (
+                  <div className="mt-3">
+                    <Link
+                      href={`/super-admin/rekomendasi-mbg?posyandu=${encodeURIComponent(activePosyanduName)}`}
+                      className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-white/20 hover:bg-white/30 text-white text-[11px] font-bold border border-white/30 transition-all"
+                    >
+                      <span>👑 Buka di Portal SAW Super Admin (Pilih Posyandu)</span>
+                      <ArrowRight className="w-3 h-3" />
+                    </Link>
+                  </div>
+                )}
               </div>
 
               <button
@@ -460,7 +455,7 @@ export default function RekomendasiMBGPage() {
                                 ? 'bg-[#fce1e4] text-[#80000f] border border-[#f8c8c8]'
                                 : item.jenisSasaran === 'Busui'
                                 ? 'bg-[#fff5f6] text-[#80000f] border border-[#fce1e4]'
-                                : 'bg-purple-100 text-purple-800 border border-purple-200'
+                                : 'bg-emerald-50 text-emerald-800 border border-emerald-200'
                             }`}
                           >
                             {item.jenisSasaran}
@@ -535,8 +530,6 @@ export default function RekomendasiMBGPage() {
               </table>
             </div>
           </div>
-            </>
-          )}
         </main>
       </div>
 

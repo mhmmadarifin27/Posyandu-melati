@@ -6,6 +6,7 @@ import { Balita, PemeriksaanBalita, StatusKMS } from '@/types/posyandu';
 import { calculateZScoreBBU, getStatusGiziBBU, getKBMGram } from '@/lib/who-growth-data';
 import { PosyanduStore } from '@/lib/supabase';
 import { toast } from '@/components/ui/custom-toast';
+import { sanitizeText } from '@/lib/utils';
 
 interface AddWeighingModalProps {
   isOpen: boolean;
@@ -36,6 +37,7 @@ export default function AddWeighingModal({
   const [imunisasi, setImunisasi] = useState<string>('');
   const [keluhan, setKeluhan] = useState<string>('-');
   const [catatanKader, setCatatanKader] = useState<string>('');
+  const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
 
   useEffect(() => {
     if (selectedBalitaId) {
@@ -87,38 +89,59 @@ export default function AddWeighingModal({
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
 
-    const newRecord: PemeriksaanBalita = {
-      id: `p-${Date.now()}`,
-      balitaId,
-      tanggalPeriksa,
-      usiaBulan,
-      beratBadan,
-      tinggiBadan,
-      lingkarKepala,
-      caraUkur,
-      zScoreBBU: currentZScore,
-      zScoreTBU: -1.0,
-      zScoreBBTB: currentZScore > 0 ? 0.2 : -1.2,
-      statusBBU: statusGiziBBU,
-      statusTBU: 'Normal',
-      statusBBTB: statusGiziBBU === 'Gizi Buruk' ? 'Gizi Buruk (Wasting)' : 'Normal',
-      statusKMS,
-      kenaikanBB,
-      kbm: kbmKg,
-      vitaminA,
-      obatCacing,
-      imunisasi,
-      keluhan,
-      catatanKader,
-    };
+    if (isSubmitting) return;
 
-    PosyanduStore.addPemeriksaan(newRecord);
-    toast.success(
-      'Penimbangan Berhasil Dicatat',
-      `BB: ${beratBadan} kg, TB: ${tinggiBadan} cm untuk ${currentBalita?.nama || 'Balita'} (Status: ${statusKMS})`
-    );
-    onSuccess();
-    onClose();
+    // Validasi Batas Medis Antropometri (Boundary Value Validation)
+    if (beratBadan < 1.0 || beratBadan > 40.0) {
+      toast.warning('Batas Antropometri', 'Berat badan balita harus berada dalam rentang klinis wajar (1.0 - 40.0 kg).');
+      return;
+    }
+    if (tinggiBadan < 35.0 || tinggiBadan > 140.0) {
+      toast.warning('Batas Antropometri', 'Tinggi badan balita harus berada dalam rentang klinis wajar (35.0 - 140.0 cm).');
+      return;
+    }
+    if (lingkarKepala < 25.0 || lingkarKepala > 65.0) {
+      toast.warning('Batas Antropometri', 'Lingkar kepala balita harus berada dalam rentang klinis wajar (25.0 - 65.0 cm).');
+      return;
+    }
+
+    setIsSubmitting(true);
+    try {
+      const newRecord: PemeriksaanBalita = {
+        id: `p-${Date.now()}`,
+        balitaId,
+        tanggalPeriksa,
+        usiaBulan,
+        beratBadan,
+        tinggiBadan,
+        lingkarKepala,
+        caraUkur,
+        zScoreBBU: currentZScore,
+        zScoreTBU: -1.0,
+        zScoreBBTB: currentZScore > 0 ? 0.2 : -1.2,
+        statusBBU: statusGiziBBU,
+        statusTBU: 'Normal',
+        statusBBTB: statusGiziBBU === 'Gizi Buruk' ? 'Gizi Buruk (Wasting)' : 'Normal',
+        statusKMS,
+        kenaikanBB,
+        kbm: kbmKg,
+        vitaminA,
+        obatCacing,
+        imunisasi: sanitizeText(imunisasi),
+        keluhan: sanitizeText(keluhan),
+        catatanKader: sanitizeText(catatanKader),
+      };
+
+      PosyanduStore.addPemeriksaan(newRecord);
+      toast.success(
+        'Penimbangan Berhasil Dicatat',
+        `BB: ${beratBadan} kg, TB: ${tinggiBadan} cm untuk ${currentBalita?.nama || 'Balita'} (Status: ${statusKMS})`
+      );
+      onSuccess();
+      onClose();
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
@@ -229,6 +252,8 @@ export default function AddWeighingModal({
                 <input
                   type="number"
                   step="0.01"
+                  min={1.0}
+                  max={40.0}
                   value={beratBadan}
                   onChange={(e) => setBeratBadan(Number(e.target.value))}
                   className="w-full p-2.5 rounded-xl border border-slate-300 bg-white font-bold text-slate-900 text-sm focus:ring-2 focus:ring-[#80000f]/20 focus:border-[#80000f] focus:outline-none"
@@ -240,6 +265,8 @@ export default function AddWeighingModal({
                 <input
                   type="number"
                   step="0.1"
+                  min={35.0}
+                  max={140.0}
                   value={tinggiBadan}
                   onChange={(e) => setTinggiBadan(Number(e.target.value))}
                   className="w-full p-2.5 rounded-xl border border-slate-300 bg-white font-medium text-slate-900 focus:ring-2 focus:ring-[#80000f]/20 focus:border-[#80000f] focus:outline-none"
@@ -251,9 +278,12 @@ export default function AddWeighingModal({
                 <input
                   type="number"
                   step="0.1"
+                  min={25.0}
+                  max={65.0}
                   value={lingkarKepala}
                   onChange={(e) => setLingkarKepala(Number(e.target.value))}
                   className="w-full p-2.5 rounded-xl border border-slate-300 bg-white font-medium text-slate-900 focus:ring-2 focus:ring-[#80000f]/20 focus:border-[#80000f] focus:outline-none"
+                  required
                 />
               </div>
             </div>
@@ -345,10 +375,11 @@ export default function AddWeighingModal({
             </button>
             <button
               type="submit"
-              className="flex items-center gap-2 px-6 py-2.5 rounded-xl bg-[#80000f] hover:bg-[#66000c] text-white font-bold shadow-md shadow-[#80000f]/20 transition-transform hover:scale-[1.02]"
+              disabled={isSubmitting}
+              className="flex items-center gap-2 px-6 py-2.5 rounded-xl bg-[#80000f] hover:bg-[#66000c] text-white font-bold shadow-md shadow-[#80000f]/20 transition-all hover:scale-[1.02] disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
             >
               <Check className="w-4 h-4" />
-              <span>Simpan Hasil Penimbangan</span>
+              <span>{isSubmitting ? 'Menyimpan...' : 'Simpan Hasil Penimbangan'}</span>
             </button>
           </div>
         </form>
