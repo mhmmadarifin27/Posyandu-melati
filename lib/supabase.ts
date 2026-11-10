@@ -267,14 +267,14 @@ export class PosyanduStore {
     try {
       // 1. Sync Balita
       const { data: dbBalita, error: errBalita } = await supabase.from('balita').select('*');
-      if (!errBalita && dbBalita && dbBalita.length > 0) {
+      if (!errBalita && dbBalita) {
         const mapped = dbBalita.map(dbToBalita);
         this.saveBalita(mapped);
       }
 
       // 2. Sync Pemeriksaan Balita
       const { data: dbPem, error: errPem } = await supabase.from('pemeriksaan_balita').select('*');
-      if (!errPem && dbPem && dbPem.length > 0) {
+      if (!errPem && dbPem) {
         const mappedPem: PemeriksaanBalita[] = dbPem.map((r: any) => ({
           id: r.id,
           balitaId: r.balita_id,
@@ -304,28 +304,28 @@ export class PosyanduStore {
 
       // 3. Sync Bumil
       const { data: dbBumil, error: errBumil } = await supabase.from('ibu_hamil').select('*');
-      if (!errBumil && dbBumil && dbBumil.length > 0) {
+      if (!errBumil && dbBumil) {
         const mapped = dbBumil.map(dbToBumil);
         this.saveBumil(mapped);
       }
 
       // 4. Sync Busui
       const { data: dbBusui, error: errBusui } = await supabase.from('ibu_menyusui').select('*');
-      if (!errBusui && dbBusui && dbBusui.length > 0) {
+      if (!errBusui && dbBusui) {
         const mapped = dbBusui.map(dbToBusui);
         this.saveBusui(mapped);
       }
 
       // 5. Sync Lansia
       const { data: dbLansia, error: errLansia } = await supabase.from('lansia').select('*');
-      if (!errLansia && dbLansia && dbLansia.length > 0) {
+      if (!errLansia && dbLansia) {
         const mapped = dbLansia.map(dbToLansia);
         this.saveLansia(mapped);
       }
 
       // 6. Sync Posyandu Tenants
       const { data: dbPosyandu, error: errPosyandu } = await supabase.from('posyandu').select('*');
-      if (!errPosyandu && dbPosyandu && dbPosyandu.length > 0) {
+      if (!errPosyandu && dbPosyandu) {
         const mappedPosyandu: PosyanduTenant[] = dbPosyandu.map((r: any) => ({
           id: r.id,
           kode: r.kode || `POS-${r.id.substring(0, 4)}`,
