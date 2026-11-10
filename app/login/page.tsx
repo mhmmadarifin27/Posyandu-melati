@@ -496,47 +496,7 @@ export default function LoginPage() {
               </div>
             </motion.div>
 
-            {/* Quick Demo Login Pills for Capstone & Testing */}
-            <motion.div variants={itemVariants} className="pt-2 border-t border-slate-100">
-              <p className="text-[11px] font-semibold text-slate-500 mb-2 text-center">
-                Pilih Akun Demo (Capstone Testing):
-              </p>
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-1.5">
-                <button
-                  type="button"
-                  onClick={() => {
-                    setEmail('superadmin@posyandu.id');
-                    setPassword('admin123');
-                    toast.success('Akun Diisi', 'Super Admin Puskesmas: superadmin@posyandu.id');
-                  }}
-                  className="px-2 py-1.5 rounded-lg border border-[#fce1e4] bg-[#fff0f2] hover:bg-[#ffe3e7] text-[11px] font-semibold text-[#80000f] text-center transition-colors cursor-pointer"
-                >
-                  👑 Super Admin
-                </button>
-                <button
-                  type="button"
-                  onClick={() => {
-                    setEmail('admin.melati@posyandu.id');
-                    setPassword('123456');
-                    toast.success('Akun Diisi', 'Admin Posyandu Melati: admin.melati@posyandu.id');
-                  }}
-                  className="px-2 py-1.5 rounded-lg border border-rose-200 bg-rose-50 hover:bg-rose-100 text-[11px] font-semibold text-rose-800 text-center transition-colors cursor-pointer"
-                >
-                  🌸 Admin Melati
-                </button>
-                <button
-                  type="button"
-                  onClick={() => {
-                    setEmail('admin.mawar@posyandu.id');
-                    setPassword('123456');
-                    toast.success('Akun Diisi', 'Admin Posyandu Mawar: admin.mawar@posyandu.id');
-                  }}
-                  className="px-2 py-1.5 rounded-lg border border-amber-200 bg-amber-50 hover:bg-amber-100 text-[11px] font-semibold text-amber-800 text-center transition-colors cursor-pointer"
-                >
-                  🌹 Admin Mawar
-                </button>
-              </div>
-            </motion.div>
+
 
             {/* Footer */}
             <motion.div variants={itemVariants} className="text-center pt-1">
