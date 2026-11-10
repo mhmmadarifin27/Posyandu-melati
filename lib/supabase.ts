@@ -45,7 +45,7 @@ const STORAGE_KEYS = {
   LANSIA: 'posyandu_melati_lansia_v3',
   PEMERIKSAAN_LANSIA: 'posyandu_melati_pem_lansia_v3',
   MENU_MBG: 'posyandu_melati_menu_mbg_v3',
-  POSYANDU: 'posyandu_saas_tenants_v1',
+  POSYANDU: 'posyandu_saas_tenants_v2',
   ACCOUNTS: 'posyandu_saas_accounts_v2',
   REGISTRATIONS: 'posyandu_saas_registrations_v2',
   ACTIVE_FILTER_POSYANDU: 'posyandu_active_filter_posyandu',
