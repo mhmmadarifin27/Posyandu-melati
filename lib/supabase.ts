@@ -349,14 +349,7 @@ export class PosyanduStore {
           createdAt: r.created_at ? r.created_at.split('T')[0] : new Date().toISOString().split('T')[0],
         }));
 
-        const existingPosyandu = this.getPosyanduList();
-        const mergedPosyandu = [...mappedPosyandu];
-        existingPosyandu.forEach((ep) => {
-          if (!mergedPosyandu.some((mp) => mp.nama.toLowerCase() === ep.nama.toLowerCase())) {
-            mergedPosyandu.push(ep);
-          }
-        });
-        this.savePosyanduList(mergedPosyandu);
+        this.savePosyanduList(mappedPosyandu);
       }
 
       // 7. Sync Profiles to Accounts & Detect Cloud Registrations across Devices
@@ -675,13 +668,36 @@ export class PosyanduStore {
   // --- KOP SURAT DINAMIS (CUSTOM KOP PER TENANT) ---
   static getKopConfig(tenantNameOrId?: string): PosyanduKopConfig {
     const list = this.getPosyanduList();
-    const matched =
+    const fallbackTenant: PosyanduTenant = {
+      id: 'default',
+      kode: 'POS-00',
+      nama: 'Posyandu Pembina',
+      logo: '/images/logo-posyandu.png',
+      pemerintahDaerah: 'Pemerintah Kota Palembang',
+      dinasKesehatan: 'Dinas Kesehatan Kota Palembang',
+      puskesmas: 'UPTD Puskesmas Pembina',
+      provinsi: 'Sumatera Selatan',
+      kotaKab: 'Kota Palembang',
+      kecamatan: 'Kecamatan Sako',
+      kelurahan: 'Sukamaju',
+      rw: '01',
+      rt: '01',
+      alamat: 'Puskesmas Pembina',
+      kodePos: '30164',
+      namaKetua: 'Kepala Puskesmas',
+      namaBidan: 'Bdn. Siti Rahma, S.Tr.Keb',
+      noHp: '081122334455',
+      createdAt: '2024-01-01',
+    };
+
+    const matched: PosyanduTenant =
       this.findTenant(tenantNameOrId) ||
       (tenantNameOrId && tenantNameOrId.toLowerCase().includes('melati')
         ? list.find((t) => t.id === 'pos-melati' || t.nama.toLowerCase().includes('melati'))
         : undefined) ||
       list[0] ||
-      INITIAL_POSYANDU[0];
+      INITIAL_POSYANDU[0] ||
+      fallbackTenant;
 
     const isMelati = matched.id === 'pos-melati' || matched.nama.toLowerCase() === 'posyandu melati';
     const storageKey = `posyandu_kop_config_${matched.id}`;
