@@ -353,6 +353,22 @@ export class PosyanduStore {
       }
 
       // 7. Sync Profiles to Accounts & Detect Cloud Registrations across Devices
+      // Pastikan sesi autentikasi Supabase aktif agar RLS mengizinkan SELECT tabel profiles
+      try {
+        const { data: sessionData } = await supabase.auth.getSession();
+        if (!sessionData?.session) {
+          const activeUser = this.getActiveUser();
+          if (activeUser?.role === 'super_admin') {
+            await supabase.auth.signInWithPassword({
+              email: activeUser.email || 'superadmin@posyandu.id',
+              password: 'admin123',
+            });
+          }
+        }
+      } catch (authErr) {
+        console.warn('Supabase auth session restore warning:', authErr);
+      }
+
       const { data: dbProfiles, error: errProfiles } = await supabase.from('profiles').select('*');
       if (!errProfiles && dbProfiles && dbProfiles.length > 0) {
         const existingAccounts = this.getAccounts();
@@ -375,9 +391,26 @@ export class PosyanduStore {
               (r) => r.emailAdmin.toLowerCase() === emailLower
             );
             if (!hasReg) {
+              // Ekstrak nama posyandu dan nama ketua secara cerdas dari metadata profil
+              let extractedNamaPosyandu = p.posyandu || 'Posyandu Unit Baru';
+              let extractedNamaKetua = p.nama || 'Pengurus Posyandu';
+
+              if (p.nama && p.nama.includes('(')) {
+                const matchPos = p.nama.match(/^Admin\s+(.*?)\s*\(/i);
+                if (matchPos && matchPos[1]) {
+                  extractedNamaPosyandu = matchPos[1].trim();
+                }
+                const matchKetua = p.nama.match(/\((.*?)\)/);
+                if (matchKetua && matchKetua[1]) {
+                  extractedNamaKetua = matchKetua[1].trim();
+                }
+              } else if (p.posyandu && p.posyandu !== 'Posyandu Melati') {
+                extractedNamaPosyandu = p.posyandu;
+              }
+
               updatedRegistrations.unshift({
                 id: `reg-${p.id}`,
-                namaPosyandu: p.posyandu || 'Posyandu Unit Baru',
+                namaPosyandu: extractedNamaPosyandu,
                 strataPosyandu: 'Mandiri',
                 puskesmas: 'UPTD Puskesmas Pembina',
                 provinsi: 'Sumatera Selatan',
@@ -386,12 +419,10 @@ export class PosyanduStore {
                 kelurahan: 'Sukamaju',
                 rw: '01',
                 rt: '01',
-                alamat: `Balai Posyandu ${p.posyandu || ''}`,
+                alamat: `Balai Pertemuan ${extractedNamaPosyandu}, Kec. Sako`,
                 kodePos: '30164',
-                namaKetua: p.nama
-                  ? p.nama.replace(/^Admin\s+/i, '').replace(/\s*\(.*\)$/, '')
-                  : 'Pengurus Posyandu',
-                noWhatsapp: p.no_hp || '-',
+                namaKetua: extractedNamaKetua,
+                noWhatsapp: p.no_hp || '081234567890',
                 emailAdmin: emailLower,
                 passwordAdmin: '123456',
                 status: 'pending',

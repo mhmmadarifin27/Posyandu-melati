@@ -169,8 +169,20 @@ export default function DaftarPosyanduPage() {
               'Email ini sudah terdaftar di Supabase Auth. Akun disinkronkan untuk login.'
             );
           }
-        } else {
-          supabaseUserId = authData?.user?.id || null;
+        } else if (authData?.user) {
+          supabaseUserId = authData.user.id;
+          try {
+            await supabase.from('profiles').upsert({
+              id: authData.user.id,
+              nama: `Admin ${cleanNamaPosyandu} (${cleanNamaKetua})`,
+              email: cleanEmail,
+              role: 'admin_posyandu',
+              posyandu: cleanNamaPosyandu,
+              no_hp: cleanNoWhatsapp,
+            });
+          } catch (upsertErr) {
+            console.warn('Profile upsert on signup warning:', upsertErr);
+          }
         }
       } catch (authErr: any) {
         console.warn('Gagal menghubungi Supabase Auth:', authErr?.message || authErr);

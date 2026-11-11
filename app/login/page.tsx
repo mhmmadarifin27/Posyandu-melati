@@ -179,6 +179,18 @@ export default function LoginPage() {
           document.cookie = `posyandu_auth_tenant=${encodeURIComponent(authPayload.posyanduNama || '')}; path=/; max-age=86400; SameSite=Lax`;
         }
 
+        // Sinkronisasi Sesi Autentikasi Supabase Client agar token JWT aktif di browser
+        if (isSupabaseConfigured && supabase) {
+          try {
+            await supabase.auth.signInWithPassword({
+              email: cleanEmail,
+              password: cleanPassword,
+            });
+          } catch (e) {
+            console.warn('Supabase signIn background warning:', e);
+          }
+        }
+
         if (isSuper) {
           setSuccessMessage(`Login berhasil sebagai Super Admin (${matchedAccount.nama})! Mengalihkan ke Portal Puskesmas...`);
           setTimeout(() => {
